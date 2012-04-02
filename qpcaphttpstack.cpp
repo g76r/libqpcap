@@ -116,8 +116,8 @@ void QPcapHttpStack::tcpDownstreamPacket(QPcapTcpPacket packet,
 
 void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
                                       QPcapHttpConversation *c) {
-  if (!c->_hit.requestTimestamp())
-    c->_hit.requestTimestamp() = packet.ip().timestamp();
+  if (c->_hit.firstRequestPacket().isNull())
+    c->_hit.firstRequestPacket() = packet;
   forever {
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
@@ -134,7 +134,7 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
         } else if (method == "HEAD") {
           c->_hit.method() = HEAD;
         }
-        QString url = _requestRE.cap(2);
+        QString url = _requestRE.cap(2).trimmed();
         c->_hit.path() = url; // LATER support proxy hits with host in url
         c->_hit.protocol() = "http";
         c->_state = InRequest;
@@ -180,16 +180,16 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
 
 void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
                                        QPcapHttpConversation *c) {
-  if (!c->_hit.firstPacketTimestamp())
-    c->_hit.firstPacketTimestamp() = packet.ip().timestamp();
-  c->_hit.lastPacketTimestamp() = packet.ip().timestamp();
+  if (!c->_hit.firstResponseTimestamp())
+    c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
+  c->_hit.lastResponseTimestamp() = packet.ip().timestamp();
 }
 
 void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
   QPcapHttpConversation *c = _conversations.value(conversation.id());
   if (!c)
     return;
-  if (c->_hit.lastPacketTimestamp()) {
+  if (c->_hit.lastResponseTimestamp()) {
     //qDebug() << c->_id << "xxx hit detected on conversation end";
     emit httpHit(conversation, c->_hit);
   }
