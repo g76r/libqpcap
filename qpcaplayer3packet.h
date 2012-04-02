@@ -6,20 +6,23 @@
 #include <QtDebug>
 #include <QByteArray>
 
+class QPcapLayer3Packet;
+
 class LIBQPCAPSHARED_EXPORT QPcapLayer3PacketData : public QSharedData {
+  friend class QPcapLayer3Packet;
 protected:
   quint16 _layer3Proto;
   QByteArray _payload;
+  quint64 _timestamp; // in microseconds since 1970
 
 public:
   inline explicit QPcapLayer3PacketData(
-      quint16 proto = 0, QByteArray payload = QByteArray())
-    : _layer3Proto(proto), _payload(payload) { }
+      quint64 timestamp = 0,  quint16 proto = 0,
+      QByteArray payload = QByteArray())
+    : _layer3Proto(proto), _payload(payload), _timestamp(timestamp) { }
   inline QPcapLayer3PacketData(const QPcapLayer3PacketData &other)
     : QSharedData(), _layer3Proto(other._layer3Proto),
-      _payload(other._payload) { }
-  inline quint16 layer3Proto() const { return _layer3Proto; }
-  inline QByteArray payload() const { return _payload; }
+      _payload(other._payload), _timestamp(other._timestamp) { }
   virtual QString english() const;
 };
 
@@ -36,10 +39,11 @@ public:
 
   explicit inline QPcapLayer3Packet() : d(new QPcapLayer3PacketData()) { }
   inline QPcapLayer3Packet(const QPcapLayer3Packet &other) : d(other.d) { }
-  inline quint16 layer3Proto() const { return d->layer3Proto(); }
-  inline QByteArray payload() const { return d->payload(); }
+  inline quint16 layer3Proto() const { return d->_layer3Proto; }
+  inline QByteArray payload() const { return d->_payload; }
   inline bool isNull() const { return payload().isNull(); }
   inline QString english() const { return d->english(); }
+  inline quint64 timestamp() const { return d->_timestamp; }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapLayer3Packet &pp) {

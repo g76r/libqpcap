@@ -5,12 +5,20 @@
 #include "qpcapthread.h"
 #include <QMetaType>
 #include "qpcaplayer2packet.h"
+#include "qpcaplayer3packet.h"
+#include "qpcapipv4packet.h"
+#include "qpcaptcpstack.h"
+#include "qpcaphttphit.h"
 
 void QPcapEngine::init() {
   _thread = new QPcapThread(this);
   moveToThread(_thread);
   qRegisterMetaType<QPcapLayer1Packet>("QPcapLayer1Packet");
   qRegisterMetaType<QPcapLayer2Packet>("QPcapLayer2Packet");
+  qRegisterMetaType<QPcapLayer3Packet>("QPcapLayer3Packet");
+  qRegisterMetaType<QPcapIPv4Packet>("QPcapIPv4Packet");
+  qRegisterMetaType<QPcapTcpPacketData>("QPcapTcpPacketData");
+  qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
   connect(_thread, SIGNAL(finished()), this, SIGNAL(captureTerminated()));
 }
 

@@ -40,7 +40,7 @@ public:
     */
   QPcapIPv4PacketData(const QPcapLayer2Packet &packet);
   inline QPcapIPv4PacketData(const QPcapIPv4PacketData &other)
-    : QPcapLayer3PacketData(other.layer3Proto(), other._payload),
+    : QPcapLayer3PacketData(other),
       _version(other._version), _headerSize(other._headerSize),
       _tos(other._tos), _totalSize(other._totalSize),
       _identification(other._identification), _unusedFlag(other._unusedFlag),

@@ -38,7 +38,9 @@ SOURCES += \
     qpcapipv4packet.cpp \
     qpcapethernetstack.cpp \
     qpcapethernetpacket.cpp \
-    qpcapengine.cpp
+    qpcapengine.cpp \
+    qpcaphttpstack.cpp \
+    qpcaphttphit.cpp
 
 HEADERS += qpcap_global.h \
     qpcapthread.h \
@@ -53,7 +55,9 @@ HEADERS += qpcap_global.h \
     qpcapethernetstack.h \
     qpcapethernetpacket.h \
     qpcapengine.h \
-    qpcap_global.h
+    qpcap_global.h \
+    qpcaphttpstack.h \
+    qpcaphttphit.h
 
 symbian {
     MMP_RULES += EXPORTUNFROZEN

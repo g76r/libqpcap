@@ -1,7 +1,7 @@
 #include "qpcapipv4packet.h"
 
 QPcapIPv4PacketData::QPcapIPv4PacketData(const QPcapLayer2Packet &packet)
-  : QPcapLayer3PacketData(0x800) {
+  : QPcapLayer3PacketData(packet.timestamp(), 0x800) {
   int layer2DataSize = packet.payload().size();
   const quint8 *layer2Data = (const quint8 *)packet.payload().constData();
   if (layer2DataSize < 20) {

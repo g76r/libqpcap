@@ -39,7 +39,7 @@ protected:
   }
 
 public:
-  QPcapTcpPacketData(QPcapIPv4Packet packet);
+  QPcapTcpPacketData(QPcapIPv4Packet packet = QPcapIPv4Packet());
   inline QPcapTcpPacketData(const QPcapTcpPacketData &other)
     : QSharedData(), _srcPort(other._srcPort), _dstPort(other._dstPort),
       _seqNumber(other._seqNumber), _ackNumber(other._ackNumber),

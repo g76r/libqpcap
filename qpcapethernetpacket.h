@@ -12,7 +12,8 @@ protected:
 
 public:
   inline explicit QPcapEthernetPacketData(const QPcapLayer1Packet &packet)
-    : QPcapLayer2PacketData(QPcapLayer2Packet::EthernetII) {
+    : QPcapLayer2PacketData(packet.timestamp().toMSecsSinceEpoch()*1000,
+                            QPcapLayer2Packet::EthernetII) {
     int size = packet.payload().size();
     const quint8 *data = (const quint8 *)packet.payload().constData();
     if (size < 14) {
@@ -27,8 +28,8 @@ public:
     }
   }
   inline QPcapEthernetPacketData(const QPcapEthernetPacketData &other)
-    : QPcapLayer2PacketData(other.layer2Proto(), other.layer3Proto(),
-                           other._payload) {
+    : QPcapLayer2PacketData(other._timestamp, other._layer2Proto,
+                            other._layer3Proto, other._payload) {
     ::memcpy(_dst, other._dst, 6);
     ::memcpy(_src, other._src, 6);
   }
