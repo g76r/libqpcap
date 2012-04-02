@@ -47,7 +47,7 @@ public:
 class LIBQPCAPSHARED_EXPORT QPcapLayer1Packet {
   friend class QPcapEngine;
 private:
-  QSharedDataPointer<QPcapLayer1PacketData> d;
+  QExplicitlySharedDataPointer<QPcapLayer1PacketData> d;
 
   inline QPcapLayer1Packet(const struct pcap_pkthdr* pkthdr,
                            const u_char* packet) {

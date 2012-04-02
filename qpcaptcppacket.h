@@ -87,7 +87,7 @@ public:
 
 class LIBQPCAPSHARED_EXPORT QPcapTcpPacket {
 private:
-  QSharedDataPointer<QPcapTcpPacketData> d;
+  QExplicitlySharedDataPointer<QPcapTcpPacketData> d;
 
 public:
   inline explicit QPcapTcpPacket(QPcapIPv4Packet packet = QPcapIPv4Packet()) {

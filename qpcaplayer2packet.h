@@ -30,7 +30,8 @@ public:
 
 class LIBQPCAPSHARED_EXPORT QPcapLayer2Packet {
 protected:
-  QSharedDataPointer<QPcapLayer2PacketData> d;
+  QExplicitlySharedDataPointer<QPcapLayer2PacketData> d;
+
   explicit inline QPcapLayer2Packet(QPcapLayer2PacketData *data) {
     d = data ? data : new QPcapLayer2PacketData(); }
 
