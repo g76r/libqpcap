@@ -72,11 +72,12 @@ public:
   quint64 &firstResponseTimestamp() { return d->_firstResponseTimestamp; }
   quint64 lastResponseTimestamp() const { return d->_lastResponseTimestamp; }
   quint64 &lastResponseTimestamp() { return d->_lastResponseTimestamp; }
-  quint64 usecToFirstByte() const { return d->_firstResponseTimestamp-requestTimestamp(); }
-  quint64 usecToLastByte() const { return d->_lastResponseTimestamp-requestTimestamp(); }
+  quint64 usecToFirstByte() const { return d->_firstResponseTimestamp ? d->_firstResponseTimestamp-requestTimestamp() : 0; }
+  quint64 usecToLastByte() const { return d->_lastResponseTimestamp ? d->_lastResponseTimestamp-requestTimestamp() : 0; }
   QString english() const;
   qint64 writeCsv(QIODevice *output) const;
   qint64 writeCsvHeader(QIODevice *output) const;
+  bool isValid() const { return d->_method != UNKNOWN && d->_firstRequestPacket.ip().timestamp(); }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapHttpHit &hit) {

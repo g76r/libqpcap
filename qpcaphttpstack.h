@@ -12,29 +12,42 @@
 class LIBQPCAPSHARED_EXPORT QPcapHttpStack : public QObject {
   Q_OBJECT
 private:
-  enum QPcapHttpState { Ready, InRequest, InResponse, NonHttp };
+  enum QPcapHttpState { AwaitingRequest, InRequest, Awaiting100Continue,
+                        InResponse, NonHttp };
 
   class QPcapHttpConversation {
     friend class QPcapHttpStack;
   private:
-    quint64 _id, _remaining;
+    QPcapTcpConversation _tcp;
+    quint64 _remaining;
     QPcapHttpState _state;
-    bool _switched, _expect100Continue;
+    bool _switched; // true if client to server = downstream
     QByteArray _buf;
     QPcapHttpHit _hit;
-    QPcapHttpConversation(quint64 id) : _id(id), _remaining(0), _state(Ready),
-      _switched(false), _expect100Continue(false) { }
+    QPcapHttpConversation(QPcapTcpConversation tcp) : _tcp(tcp),
+      _remaining(0), _state(AwaitingRequest), _switched(false) { }
   };
 
   QHash<quint64, QPcapHttpConversation*> _conversations;
-  QRegExp _requestRE, _headerRE;
+  QRegExp _requestRE, _headerRE, _100ContinueRE, _responseRE;
 
 public:
   explicit QPcapHttpStack(QObject *parent = 0);
 
 signals:
+  /** Each time a hit is detected and fully qualified (i.e. request is
+    * terminated therefore all timestamps are known).
+    */
   void httpHit(QPcapTcpConversation conversation, QPcapHttpHit hit);
-  
+  /** Should be connected to same name slot of QPcapTcpStack to recover
+    * from some case of corrupted data in upstream flow.
+    */
+  void discardUpstreamBuffer(QPcapTcpConversation conversation);
+  /** Should be connected to same name slot of QPcapTcpStack to recover
+    * from some case of corrupted data in downstream flow.
+    */
+  void discardDownstreamBuffer(QPcapTcpConversation conversation);
+
 public slots:
   void conversationStarted(QPcapTcpConversation conversation);
   void tcpUpstreamPacket(QPcapTcpPacket packet,
@@ -44,8 +57,14 @@ public slots:
   void conversationFinished(QPcapTcpConversation conversation);
 
 private:
+  void hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
+                    QPcapTcpConversation conversation);
+  // following methods are called by tcpPacket() depending
+  // on the conversation being swithed or not (i.e. client to server is
+  // upstream or not).
   void hasRequestPacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
   void hasResponsePacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
+  void has100ContinueResponsePacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
 };
 
 #endif // QPCAPHTTPSTACK_H

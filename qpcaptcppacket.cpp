@@ -34,6 +34,19 @@ QPcapTcpPacketData::QPcapTcpPacketData(QPcapIPv4Packet packet) : _ip(packet) {
 
 
 QString QPcapTcpPacketData::english() const {
+  QString flags;
+  if (urg())
+    flags.append('U');
+  if (!ack())
+    flags.append('-');
+  //if (psh())
+  //  flags.append('P');
+  if (rst())
+    flags.append('R');
+  if (syn())
+    flags.append('S');
+  if (fin())
+    flags.append('F');
   return QString("QPcapTcpPacket(%1, %2, %3, %4, %5)").arg(src()).arg(dst())
-      .arg(_seqNumber).arg(syn() || rst() || fin()).arg(payload().size());
+      .arg(_seqNumber).arg(flags).arg(payload().size());
 }

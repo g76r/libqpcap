@@ -21,17 +21,18 @@ public:
 signals:
   /** Emitting ordered data stream chunk, client to server.
     * Beware: if SYN/SYN-ACK exchange was previous capture start, client and
-    * server are randomly chosen (actually: first seen packet source is client).
+    * server are randomly chosen (actually: first seen packet source is
+    * assumed to be upstream).
     */
   void tcpUpstreamPacket(QPcapTcpPacket packet,
                          QPcapTcpConversation conversation);
   /** Emitting ordered data stream chunk, server to client.
     * Beware: if SYN/SYN-ACK exchange was previous capture start, client and
-    * server are randomly chosen (actually: first seen packet source is client).
+    * server are randomly chosen (actually: first seen packet source is
+    * assumed to be upstream).
     */
   void tcpDownstreamPacket(QPcapTcpPacket packet,
                            QPcapTcpConversation conversation);
-
   void conversationStarted(QPcapTcpConversation conversation);
   void conversationFinished(QPcapTcpConversation conversation);
 
@@ -39,6 +40,13 @@ public slots:
   /** Receiving IP packet, potentially retransmitted or in wrong order.
     */
   void ipPacketReceived(QPcapIPv4Packet packet);
+  /** Discard any upstream buffered packet and reset upstream sequence numbers.
+    */
+  void discardUpstreamBuffer(QPcapTcpConversation conversation);
+  /** Discard any downstream buffered packet and reset downstream sequence
+    * numbers.
+    */
+  void discardDownstreamBuffer(QPcapTcpConversation conversation);
 
 private:
   void dispatchPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);

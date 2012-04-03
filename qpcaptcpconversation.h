@@ -16,7 +16,7 @@ private:
   QPcapTcpPacket _firstPacket;
   quint32 _nextUpstreamNumber;
   quint32 _nextDownstreamNumber;
-  bool _numbersInitialized;
+  bool _upstreamNumbersInitialized, _downstreamNumbersInitialized;
   QList<QPcapTcpPacket> _packets;
 
 public:
@@ -25,7 +25,8 @@ public:
     : QSharedData(), _id(other._id), _firstPacket(other._firstPacket),
       _nextUpstreamNumber(other._nextUpstreamNumber),
       _nextDownstreamNumber(other._nextDownstreamNumber),
-      _numbersInitialized(other._numbersInitialized),
+      _upstreamNumbersInitialized(other._upstreamNumbersInitialized),
+      _downstreamNumbersInitialized(other._downstreamNumbersInitialized),
       _packets(other._packets) { }
 };
 
@@ -58,7 +59,8 @@ public:
         && d->_firstPacket.ip().dstAsInt() == packet.ip().dstAsInt(); }
   inline quint32 &nextUpstreamNumber() { return d->_nextUpstreamNumber; }
   inline quint32 &nextDownstreamNumber() { return d->_nextDownstreamNumber; }
-  inline bool &numbersInitialized() { return d->_numbersInitialized; }
+  inline bool &upstreamNumbersInitialized() { return d->_upstreamNumbersInitialized; }
+  inline bool &downstreamNumbersInitialized() { return d->_downstreamNumbersInitialized; }
   inline bool isNull() { return !id(); }
   /** To avoid huge memory consumption, this list shold be left empty by
     * network analyzers, however user interface may want to fill it for some
