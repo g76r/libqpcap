@@ -47,6 +47,9 @@ public slots:
     * numbers.
     */
   void discardDownstreamBuffer(QPcapTcpConversation conversation);
+  /** Discard any conversation or buffered packet.
+    */
+  void reset();
 
 private:
   void dispatchPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);

@@ -140,3 +140,9 @@ void QPcapTcpStack::discardDownstreamBuffer(QPcapTcpConversation conversation) {
   _downstreamBuffer.values(conversation).clear();
   conversation.downstreamNumbersInitialized() = false;
 }
+
+void QPcapTcpStack::reset() {
+  _conversations.clear();
+  _upstreamBuffer.clear();
+  _downstreamBuffer.clear();
+}

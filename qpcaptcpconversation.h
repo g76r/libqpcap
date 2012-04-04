@@ -71,6 +71,7 @@ public:
     return d == other.d; }
   inline bool operator <(const QPcapTcpConversation &other) const {
     return id() < other.id(); }
+  static void resetConversationCounter();
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapTcpConversation &o) {

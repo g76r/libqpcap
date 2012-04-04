@@ -10,3 +10,7 @@ QPcapTcpConversationData::QPcapTcpConversationData(QPcapTcpPacket firstPacket)
     _nextDownstreamNumber(0), _upstreamNumbersInitialized(false),
     _downstreamNumbersInitialized(false) {
 }
+
+void QPcapTcpConversation::resetConversationCounter() {
+  _conversationCounter = 1;
+}
