@@ -2,7 +2,7 @@ QT -= gui
 TARGET = qpcap
 TEMPLATE = lib
 
-QMAKE_RPATHDIR = # no rpath in linking
+win32:QMAKE_RPATHDIR = # no rpath in linking
 
 DEFINES += LIBQPCAP_LIBRARY
 win32:INCLUDEPATH += c:/WpdPack/Include
