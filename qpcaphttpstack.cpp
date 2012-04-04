@@ -38,6 +38,7 @@ void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
 
 void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
                                   QPcapTcpConversation conversation) {
+  //qDebug() << "receiving HTTP packet" << conversation.id() << packet;
   if (packet.isEmpty())
     return;
   QPcapHttpConversation *c = _conversations.value(conversation.id());
@@ -46,10 +47,10 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
                << (isUpstream ? "(upstream)" : "(downstream)");
     return;
   }
+  //qDebug() << conversation.id() << "   " << c->_state;
   switch(c->_state) {
   case AwaitingRequest:
     // no packet yet seen, this should be the first packet of a request
-    c->_switched = !isUpstream;
     c->_buf.append(packet.payload());
     hasRequestPacket(packet, c);
     break;
@@ -110,6 +111,23 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       hasResponsePacket(packet, c);
     }
     break;
+  case TruncatedResponseBeforeRequest:
+    if (isUpstream) { // server to client
+      // ignore packet since it's before first request
+    } else { // client to server
+      // truncated response is terminated since a new request arrives
+      c->_buf.clear();
+      c->_hit = QPcapHttpHit();
+      c->_state = AwaitingRequest;
+      // discarding unmatched tcp packet on the other stream should not be
+      // necessary... but if there has been some sequence number
+      // desynchronization due to lost packets during capture
+      emit discardUpstreamBuffer(c->_tcp);
+      // process packet as the first packet of a request
+      c->_buf.append(packet.payload());
+      hasRequestPacket(packet, c);
+    }
+    break;
   case NonHttp:
     return;
   }
@@ -124,8 +142,21 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
   forever {
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
-    if (p < 0)
-      break;
+    if (p < 0) {
+      if (c->_buf.size() >= 2048) {
+        // don't have yet seen a \n within first bytes of a request buffer
+        // this should be main case were a non http conversation is detected
+        qDebug() << c->_tcp.id() << "oo6 HTTP inconsistency detected, probably "
+                    "not actual HTTP (case 6)"
+                 << QString(c->_buf.constData()).left(32);
+        c->_buf.clear();
+        c->_state = NonHttp;
+      } else {
+        // do nothing maybe (even not likely) the request first line take more
+        // than one tcp packet
+      }
+      return;
+    }
     switch (c->_state) {
     case AwaitingRequest:
       if (_requestRE.exactMatch(s.left(p))) {
@@ -143,18 +174,20 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
         c->_hit.protocol() = "http";
         c->_buf.remove(0, p+1);
         c->_state = InRequest;
-      } else if (c->_buf.size() >= 2048) {
-        // don't have yet seen a \n within first bytes of a request buffer
-        // this should be main case were a non http conversation is detected
-        qDebug() << c->_tcp.id() << "oo6 HTTP inconsistency detected, probably "
-                    "not actual HTTP (case 6)"
+      } else if (!c->_switched) {
+        // the request does not begin with a request string, it is either
+        // non-HTTP or the connection began before capture start
+        c->_state = TruncatedResponseBeforeRequest;
+        c->_switched = true;
+        return;
+      } else {
+        // won't switch again, this is definitely non-HTTP
+        qDebug() << c->_tcp.id() << "oo8 HTTP inconsistency detected, probably "
+                    "not actual HTTP (case 8)"
                  << QString(c->_buf.constData()).left(32);
         c->_buf.clear();
         c->_state = NonHttp;
         return;
-      } else {
-        // do nothing maybe (even not likely) the request first line take more
-        // than one tcp packet
       }
       break;
     case InRequest:
@@ -175,6 +208,7 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
       break;
     case InResponse:
     case NonHttp:
+    case TruncatedResponseBeforeRequest:
       qWarning() << "QPcapHttpStack::hasRequestPacket in unexpected state";
     }
   }

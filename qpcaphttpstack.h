@@ -14,7 +14,7 @@ class LIBQPCAPSHARED_EXPORT QPcapHttpStack : public QObject {
   Q_OBJECT
 private:
   enum QPcapHttpState { AwaitingRequest, InRequest, Awaiting100Continue,
-                        InResponse, NonHttp };
+                        InResponse, TruncatedResponseBeforeRequest, NonHttp };
 
   class QPcapHttpConversation {
     friend class QPcapHttpStack;

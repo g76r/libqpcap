@@ -8,6 +8,7 @@ void QPcapIPv4Stack::layer2PacketReceived(QPcapLayer2Packet packet) {
     return;
   }
   QPcapIPv4Packet ip(packet);
+  //qDebug() << "received IPv4 packet" << packet;
   /*if (!ip.dontFragment() && ip.layer4Proto() == QPcapIPv4Packet::TCP)
     qDebug() << "found TCP packet without don't fragment' flag"
              << ip.src() << ip.dst() << ip.payload().size(); */
