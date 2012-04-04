@@ -8,6 +8,7 @@
 #include "qpcaphttphit.h"
 #include <QHash>
 #include <QRegExp>
+#include "qpcaptcpstack.h"
 
 class LIBQPCAPSHARED_EXPORT QPcapHttpStack : public QObject {
   Q_OBJECT
@@ -33,12 +34,13 @@ private:
 
 public:
   explicit QPcapHttpStack(QObject *parent = 0);
+  void connectToLowerStack(QPcapTcpStack &stack);
 
 signals:
   /** Each time a hit is detected and fully qualified (i.e. request is
     * terminated therefore all timestamps are known).
     */
-  void httpHit(QPcapTcpConversation conversation, QPcapHttpHit hit);
+  void httpHit(QPcapHttpHit hit);
   /** Should be connected to same name slot of QPcapTcpStack to recover
     * from some case of corrupted data in upstream flow.
     */

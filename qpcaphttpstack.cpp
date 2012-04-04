@@ -30,7 +30,7 @@ void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
     return;
   if (c->_hit.isValid()) {
     // last response packet received has never been reported before
-    emit httpHit(conversation, c->_hit);
+    emit httpHit(c->_hit);
   }
   _conversations.remove(conversation.id());
   delete c;
@@ -90,7 +90,7 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
   case InResponse:
     if (isUpstream != c->_switched) { // client to server
       // response is terminated since a new request arrives
-      emit httpHit(conversation, c->_hit);
+      emit httpHit(c->_hit);
       c->_buf.clear();
       c->_hit = QPcapHttpHit();
       c->_state = AwaitingRequest;
@@ -117,8 +117,10 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
 
 void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
                                       QPcapHttpConversation *c) {
-  if (c->_hit.firstRequestPacket().isNull())
+  if (c->_hit.firstRequestPacket().isNull()) {
+    c->_hit.conversation() = c->_tcp;
     c->_hit.firstRequestPacket() = packet;
+  }
   forever {
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
@@ -200,4 +202,20 @@ void QPcapHttpStack::has100ContinueResponsePacket(QPcapTcpPacket packet,
     c->_state = InResponse;
     hasResponsePacket(packet, c);
   }
+}
+
+void QPcapHttpStack::connectToLowerStack(QPcapTcpStack &stack) {
+  connect(&stack, SIGNAL(conversationStarted(QPcapTcpConversation)),
+          this, SLOT(conversationStarted(QPcapTcpConversation)));
+  connect(&stack, SIGNAL(conversationFinished(QPcapTcpConversation)),
+          this, SLOT(conversationFinished(QPcapTcpConversation)));
+  connect(&stack, SIGNAL(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
+          this, SLOT(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
+  connect(&stack, SIGNAL(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
+          this, SLOT(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
+  connect(this, SIGNAL(discardUpstreamBuffer(QPcapTcpConversation)),
+          &stack, SLOT(discardUpstreamBuffer(QPcapTcpConversation)));
+  connect(this, SIGNAL(discardDownstreamBuffer(QPcapTcpConversation)),
+          &stack, SLOT(discardDownstreamBuffer(QPcapTcpConversation)));
+
 }

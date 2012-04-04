@@ -118,6 +118,9 @@ public:
   QString english() const { return d->english(); }
   inline bool isNull() const { return !d->srcPort(); }
   inline bool isEmpty() const { return d->payload().isEmpty(); }
+  inline bool operator ==(const QPcapTcpPacket &other) const {
+    return seqNumber() == other.seqNumber(); // TODO use a global packet id
+  }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapTcpPacket &pp) {
