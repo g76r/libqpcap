@@ -54,7 +54,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
         //qDebug() << "  found upstream buffered packet" << packet2;
         dispatchPacket(packet2, conversation); // this is a recursive call
         //qDebug() << "  removing buffered packet" << packet2;
-        _upstreamBuffer.remove(packet2);
+        _upstreamBuffer.values(conversation).removeAll(packet2);
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextUpstreamNumber()) < 0) {
@@ -91,7 +91,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
         qDebug() << conversation.id() << "  found downstream buffered packet" << packet2;
         dispatchPacket(packet2, conversation); // this is a recursive call
         qDebug() << conversation.id() << "  removing buffered packet" << packet2;
-        _downstreamBuffer.remove(packet2);
+        _downstreamBuffer.values(conversation).removeAll(packet2);
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextDownstreamNumber()) < 0){

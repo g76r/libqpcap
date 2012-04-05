@@ -35,7 +35,8 @@ private:
   QExplicitlySharedDataPointer<QPcapTcpConversationData> d;
 
 public:
-  inline QPcapTcpConversation(QPcapTcpPacket firstPacket = QPcapTcpPacket()) {
+  inline explicit QPcapTcpConversation(
+      QPcapTcpPacket firstPacket = QPcapTcpPacket()) {
     d = new QPcapTcpConversationData(firstPacket); }
   inline QPcapTcpConversation(const QPcapTcpConversation &other) : d(other.d) { }
   inline quint32 id() const { return d->_id; }
