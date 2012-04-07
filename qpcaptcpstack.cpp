@@ -65,7 +65,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
             //qDebug() << conversation.id() << "RR>" << packet;
         }
       } else {
-        qDebug() << conversation.id() << "~~>" << packet;
+        //qDebug() << conversation.id() << "~~>" << packet;
         //qDebug() << "  inserting upstream buffered packet" << packet;
         _upstreamBuffer.insertMulti(conversation, packet);
       }
@@ -88,21 +88,21 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
           break;
         }
       if (!packet2.isNull()) {
-        qDebug() << conversation.id() << "  found downstream buffered packet" << packet2;
+        //qDebug() << conversation.id() << "  found downstream buffered packet" << packet2;
         dispatchPacket(packet2, conversation); // this is a recursive call
-        qDebug() << conversation.id() << "  removing buffered packet" << packet2;
+        //qDebug() << conversation.id() << "  removing buffered packet" << packet2;
         _downstreamBuffer.values(conversation).removeAll(packet2);
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextDownstreamNumber()) < 0){
         // retransmission of already treated packet: nothing to do
         if (conversation.nextDownstreamNumber()-(qint32)(packet.seqNumber()==1)) {
-          qDebug() << conversation.id() << "<KK" << packet; // probable keepalive
+          //qDebug() << conversation.id() << "<KK" << packet; // probable keepalive
         } else {
-          qDebug() << conversation.id() << "<RR" << packet;
+          //qDebug() << conversation.id() << "<RR" << packet;
         }
       } else {
-        qDebug() << conversation.id() << "<~~" << packet;
+        //qDebug() << conversation.id() << "<~~" << packet;
         //qDebug() << conversation.id() << "  inserting downstream buffered packet" << packet;
         _downstreamBuffer.insertMulti(conversation, packet);
       }
@@ -113,13 +113,13 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     emit conversationFinished(conversation);
     _conversations.remove(conversation);
     if (_upstreamBuffer.values(conversation).size() != 0) { // should be useless
-      qDebug() << conversation.id() << "  remaining upstream buffered packets"
-               << _upstreamBuffer.size();
+      //qDebug() << conversation.id() << "  remaining upstream buffered packets"
+      //         << _upstreamBuffer.size();
       _upstreamBuffer.remove(conversation);
     }
     if (_downstreamBuffer.values(conversation).size() != 0) { // should be useless
-      qDebug() << conversation.id() << "  remaining downstream buffered packets"
-               << _downstreamBuffer.size();
+      //qDebug() << conversation.id() << "  remaining downstream buffered packets"
+      //         << _downstreamBuffer.size();
       _downstreamBuffer.remove(conversation);
     }
   }
@@ -128,7 +128,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
 void QPcapTcpStack::discardUpstreamBuffer(QPcapTcpConversation conversation) {
   int n = _upstreamBuffer.values(conversation).size();
   if (n)
-    qDebug() << conversation.id() << "dd> discarding upstream" << n;
+    //qDebug() << conversation.id() << "dd> discarding upstream" << n;
   _upstreamBuffer.values(conversation).clear();
   conversation.upstreamNumbersInitialized() = false;
 }
@@ -136,7 +136,7 @@ void QPcapTcpStack::discardUpstreamBuffer(QPcapTcpConversation conversation) {
 void QPcapTcpStack::discardDownstreamBuffer(QPcapTcpConversation conversation) {
   int n = _downstreamBuffer.values(conversation).size();
   if (n)
-    qDebug() << conversation.id() << "<dd discarding downstream" << n;
+    //qDebug() << conversation.id() << "<dd discarding downstream" << n;
   _downstreamBuffer.values(conversation).clear();
   conversation.downstreamNumbersInitialized() = false;
 }
