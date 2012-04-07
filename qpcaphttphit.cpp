@@ -11,7 +11,7 @@ qint64 QPcapHttpHit::writeCsv(QIODevice *output) const {
   QDateTime dt = QDateTime::fromMSecsSinceEpoch(requestTimestamp()/1000);
   QString host = d->_host;
   QString path = d->_path;
-  host.replace(";", "|"); // LATER use better ; escape
+  host.replace(";", "|");
   path.replace(";", "|");
   QString s;
   s.append(dt.toString("yyyy-MM-dd")).append(';')
@@ -27,12 +27,35 @@ qint64 QPcapHttpHit::writeCsv(QIODevice *output) const {
       .append(d->_firstRequestPacket.src()).append(';')
       .append(d->_firstRequestPacket.dst()).append(';')
       .append(QString::number(usecToFirstByte())).append(';')
-      .append(QString::number(usecToLastByte())).append('\n');
+      .append(QString::number(usecToLastByte())).append(';')
+      .append(QString::number(returnCode()));
+  for (int i = 0; i < d->_customFields.size(); ++i) {
+    QString v(d->_customFields.at(i));
+    v.replace(";", "|");
+    s.append(";").append(v);
+  }
+  s.append('\n');
   return output->write(s.toUtf8());
 }
 
 qint64 QPcapHttpHit::writeCsvHeader(QIODevice *output) const {
-  return output->write("day;time;usec;usec_since_1970;protocol;method;host;"
-                       "path;ip_src;ip_dst;tcp_src_port;tcp_dst_port;tcp_src;"
-                       "tcp_src;ttfb;ttlb\n");
+  QString s;
+  s.append("day;time;usec;usec_since_1970;protocol;method;host;"
+           "path;ip_src;ip_dst;tcp_src_port;tcp_dst_port;tcp_src;"
+           "tcp_src;ttfb;ttlb;return_code");
+  for (int i = 0; i < d->_customFields.size(); ++i)
+    s.append(";field").append(QString::number(i));
+  s.append('\n');
+  return output->write(s.toUtf8());
+
+}
+
+void QPcapHttpHit::setCustomField(int index, QString value) {
+  if (index < d->_customFields.size())
+    d->_customFields[index] = value;
+  else {
+    for (int i = d->_customFields.size(); i < index; ++i)
+      d->_customFields.append(QString());
+    d->_customFields.append(value);
+  }
 }

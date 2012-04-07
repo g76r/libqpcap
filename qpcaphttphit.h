@@ -22,6 +22,7 @@ private:
   QPcapTcpPacket _firstRequestPacket;
   quint64 _firstResponseTimestamp, _lastResponseTimestamp;
   QPcapTcpConversation _conversation;
+  QList<QString> _customFields;
 
 public:
   inline QPcapHttpHitData(
@@ -73,7 +74,7 @@ public:
   QString &host() { return d->_host; }
   QString path() const { return d->_path; }
   QString &path() { return d->_path; }
-  quint16 returnCode() const { return d->_returnCode; }
+  quint16 &returnCode() const { return d->_returnCode; }
   quint64 requestTimestamp() const { return d->_firstRequestPacket.ip().timestamp(); }
   QPcapTcpPacket &firstRequestPacket() const { return d->_firstRequestPacket; }
   quint64 firstResponseTimestamp() const { return d->_firstResponseTimestamp; }
@@ -83,6 +84,8 @@ public:
   quint64 usecToFirstByte() const { return d->_firstResponseTimestamp ? d->_firstResponseTimestamp-requestTimestamp() : 0; }
   quint64 usecToLastByte() const { return d->_lastResponseTimestamp ? d->_lastResponseTimestamp-requestTimestamp() : 0; }
   QPcapTcpConversation &conversation() const { return d->_conversation; }
+  QString customField(int index) const { return d->_customFields.value(index); }
+  void setCustomField(int index, QString value);
   QString english() const;
   qint64 writeCsv(QIODevice *output) const;
   qint64 writeCsvHeader(QIODevice *output) const;

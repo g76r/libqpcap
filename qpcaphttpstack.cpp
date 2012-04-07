@@ -139,6 +139,18 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
     c->_hit.conversation() = c->_tcp;
     c->_hit.firstRequestPacket() = packet;
   }
+  //qDebug() << "looking for upstream custom fields" << _filters.size();
+  for (int i = 0; i < _filters.size(); ++i) {
+    QPcapHttpFilter &f = _filters[i];
+    //qDebug() << "testing upstream custom field" << i << f._direction << (int)Upstream << f._re.pattern() << c->_buf.size();
+    if ((f._direction == Upstream || f._direction == Anystream)
+        && c->_hit.customField(i).isNull()) {
+      if (f._re.indexIn(c->_buf.constData()) >= 0) {
+        //qDebug() << "found upstream custom field" << i << f._re.cap(f._captureRank);
+        c->_hit.setCustomField(i, f._re.cap(f._captureRank));
+      }
+    }
+  }
   forever {
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
@@ -146,9 +158,9 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
       if (c->_buf.size() >= 2048) {
         // don't have yet seen a \n within first bytes of a request buffer
         // this should be main case were a non http conversation is detected
-        qDebug() << c->_tcp.id() << "oo6 HTTP inconsistency detected, probably "
-                    "not actual HTTP (case 6)"
-                 << QString(c->_buf.constData()).left(32);
+        //qDebug() << c->_tcp.id() << "oo6 HTTP inconsistency detected, probably "
+        //            "not actual HTTP (case 6)"
+        //         << QString(c->_buf.constData()).left(32);
         c->_buf.clear();
         c->_state = NonHttp;
       } else {
@@ -182,9 +194,9 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
         return;
       } else {
         // won't switch again, this is definitely non-HTTP
-        qDebug() << c->_tcp.id() << "oo8 HTTP inconsistency detected, probably "
-                    "not actual HTTP (case 8)"
-                 << QString(c->_buf.constData()).left(32);
+        //qDebug() << c->_tcp.id() << "oo8 HTTP inconsistency detected, probably "
+        //            "not actual HTTP (case 8)"
+        //         << QString(c->_buf.constData()).left(32);
         c->_buf.clear();
         c->_state = NonHttp;
         return;
@@ -219,7 +231,29 @@ void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
   if (!c->_hit.firstResponseTimestamp())
     c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
   c->_hit.lastResponseTimestamp() = packet.ip().timestamp();
-  // TODO parse return code and provide it as a hit data
+  if (!c->_hit.returnCode()) {
+    QString s(c->_buf.constData());
+    int p = s.indexOf('\n');
+    if (p && _responseRE.exactMatch(s.left(p))) {
+      quint16 rc = _responseRE.cap(1).toUShort();
+      c->_hit.returnCode() = rc;
+      //qDebug() << "found HTTP return code" << rc;
+    } else if(c->_buf.size() > 256) {
+      // no longer scan for return code (return code packetd lost or non-HTTP)
+      c->_hit.returnCode() = -1;
+    }
+  }
+  //qDebug() << "looking for downstream custom fields" << _filters.size();
+  for (int i = 0; i < _filters.size(); ++i) {
+    QPcapHttpFilter &f = _filters[i];
+    if ((f._direction == Downstream || f._direction == Anystream)
+        && c->_hit.customField(i).isNull()) {
+      if (f._re.indexIn(c->_buf.constData()) >= 0) {
+        //qDebug() << "found downstream custom field" << i << f._re.cap(f._captureRank);
+        c->_hit.setCustomField(i, f._re.cap(f._captureRank));
+      }
+    }
+  }
 }
 
 void QPcapHttpStack::has100ContinueResponsePacket(QPcapTcpPacket packet,
