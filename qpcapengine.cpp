@@ -64,5 +64,9 @@ void QPcapEngine::packetHandler(const struct pcap_pkthdr* pkthdr,
 void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
                           const u_char* packet) {
   //qDebug() << "PcapEngine::callback";
-  reinterpret_cast<QPcapEngine*>(user)->packetHandler(pkthdr, packet);
+  QPcapEngine *that = reinterpret_cast<QPcapEngine*>(user);
+  if (that)
+    that->packetHandler(pkthdr, packet);
+  else
+    qDebug() << "QPcapEngine::callback with null object pointer";
 }

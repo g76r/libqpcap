@@ -10,6 +10,10 @@ QPcapThread::QPcapThread(QPcapEngine *engine, QObject *parent)
 
 void QPcapThread::run() {
   forever {
+    if (!_engine->_pcap) {
+      qDebug() << "QPcapThread::run() with null pcap pointer";
+      break;
+    }
     int rc = pcap_dispatch(_engine->_pcap, 32, _engine->callback,
                            reinterpret_cast<u_char*>(_engine));
     QCoreApplication::processEvents();
