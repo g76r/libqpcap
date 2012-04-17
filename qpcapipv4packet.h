@@ -51,7 +51,7 @@ public:
     ::memcpy(_dst, other._dst, 4);
   }
   inline quint16 layer3Proto() const { return _layer3Proto; }
-  QString english() const;
+  QString toText() const;
   inline quint16 totalSize() const { return _totalSize; }
   inline quint16 identification() const { return _identification; }
   inline bool dontFragment() const { return _dontFragment; }

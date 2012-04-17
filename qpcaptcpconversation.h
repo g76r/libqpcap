@@ -41,7 +41,7 @@ public:
   inline QPcapTcpConversation(const QPcapTcpConversation &other) : d(other.d) { }
   inline quint64 id() const { return d->_id; }
   inline QPcapTcpPacket firstPacket() const { return d->_firstPacket; }
-  inline QString english() const {
+  inline QString toText() const {
     return QString("PcapTcpConversation(%1, %2, %3)").arg(d->_id)
         .arg(d->_firstPacket.src()).arg(d->_firstPacket.dst()); }
   inline bool matchesEitherStream(QPcapTcpPacket packet) {
@@ -76,7 +76,7 @@ public:
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapTcpConversation &o) {
-  dbg.nospace() << o.english();
+  dbg.nospace() << o.toText();
   return dbg.space();
 }
 

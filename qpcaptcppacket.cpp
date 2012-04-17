@@ -37,14 +37,12 @@ QPcapTcpPacketData::QPcapTcpPacketData(QPcapIPv4Packet packet)
 }
 
 
-QString QPcapTcpPacketData::english() const {
+QString QPcapTcpPacketData::toText() const {
   QString flags;
   if (urg())
     flags.append('U');
   if (!ack())
     flags.append('-');
-  //if (psh())
-  //  flags.append('P');
   if (rst())
     flags.append('R');
   if (syn())
@@ -54,6 +52,21 @@ QString QPcapTcpPacketData::english() const {
   return QString("QPcapTcpPacket(%1, %2, %3, %4, %5, %6)").arg(id())
       .arg(src()).arg(dst())
       .arg(_seqNumber).arg(flags).arg(payload().size());
+}
+
+QString QPcapTcpPacketData::toShortText() const {
+  QString flags;
+  if (urg())
+    flags.append('U');
+  if (!ack())
+    flags.append('-');
+  if (rst())
+    flags.append('R');
+  if (syn())
+    flags.append('S');
+  if (fin())
+    flags.append('F');
+  return QString("%1 %2 %3").arg(id()).arg(flags).arg(payload().size());
 }
 
 void QPcapTcpPacket::resetPacketCounter() {

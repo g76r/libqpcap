@@ -1,7 +1,7 @@
 #include "qpcaphttphit.h"
 #include <QDateTime>
 
-QString QPcapHttpHit::english() const {
+QString QPcapHttpHit::toText() const {
   return QString("QPcapHttpHit(%1 %2 %3 %4 %5 %6 %7)")
       .arg(methodAsString()).arg(protocol()).arg(host()).arg(path())
       .arg(requestTimestamp()).arg(usecToFirstByte()).arg(usecToLastByte());

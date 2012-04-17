@@ -85,7 +85,8 @@ public:
   inline bool fin() const { return _fin; }
   inline QByteArray payload() const { return _payload; }
   inline QPcapIPv4Packet ip() const { return _ip; }
-  QString english() const;
+  QString toText() const;
+  QString toShortText() const;
 };
 
 class LIBQPCAPSHARED_EXPORT QPcapTcpPacket {
@@ -119,7 +120,8 @@ public:
   inline bool fin() const { return d->fin(); }
   inline QByteArray payload() const { return d->payload(); }
   inline QPcapIPv4Packet ip() const { return d->ip(); }
-  QString english() const { return d->english(); }
+  QString toText() const { return d->toText(); }
+  QString toShortText() const { return d->toShortText(); }
   inline bool isNull() const { return !d->srcPort(); }
   inline bool isEmpty() const { return d->payload().isEmpty(); }
   inline bool operator ==(const QPcapTcpPacket &other) const {
@@ -129,7 +131,7 @@ public:
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapTcpPacket &pp) {
-  dbg.nospace() << pp.english();
+  dbg.nospace() << pp.toText();
   return dbg.space();
 }
 

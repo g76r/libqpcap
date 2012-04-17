@@ -20,7 +20,7 @@ QPcapIPv4PacketData::QPcapIPv4PacketData(const QPcapLayer2Packet &packet)
   if (_fragmentOffset || _moreFragments) {
     qDebug() << "parsing fragmented IP packet" << layer2Data[6] << layer2Data[7]
              << _fragmentOffset << _moreFragments
-             << packet.layer2Proto() << packet.english();
+             << packet.layer2Proto() << packet.toText();
   }
   _ttl = layer2Data[8];
   _layer4Proto = layer2Data[9];
@@ -38,7 +38,7 @@ QPcapIPv4PacketData::QPcapIPv4PacketData(const QPcapLayer2Packet &packet)
                         - _headerSize*4);
 }
 
-QString QPcapIPv4PacketData::english() const {
+QString QPcapIPv4PacketData::toText() const {
   return QString("QPcapIPv4Packet(%1, %2, %3, %4, %5)")
       .arg(src()).arg(dst()).arg(layer4Proto())
       .arg(_payload.size()).arg(_payload.toHex().constData());

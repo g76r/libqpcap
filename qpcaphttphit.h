@@ -86,14 +86,14 @@ public:
   QPcapTcpConversation &conversation() const { return d->_conversation; }
   QString customField(int index) const { return d->_customFields.value(index); }
   void setCustomField(int index, QString value);
-  QString english() const;
+  QString toText() const;
   qint64 writeCsv(QIODevice *output) const;
   qint64 writeCsvHeader(QIODevice *output) const;
   bool isValid() const { return d->_method != UNKNOWN && d->_firstRequestPacket.ip().timestamp(); }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapHttpHit &hit) {
-  dbg.nospace() << hit.english();
+  dbg.nospace() << hit.toText();
   return dbg.space();
 }
 

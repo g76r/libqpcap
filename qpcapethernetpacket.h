@@ -49,7 +49,7 @@ public:
         .arg(_src[4], 2, 16, QLatin1Char('0'))
         .arg(_src[5], 2, 16, QLatin1Char('0'));
   }
-  QString english() const;
+  QString toText() const;
 };
 
 class LIBQPCAPSHARED_EXPORT QPcapEthernetPacket : public QPcapLayer2Packet {

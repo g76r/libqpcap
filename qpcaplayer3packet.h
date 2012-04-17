@@ -23,7 +23,7 @@ public:
   inline QPcapLayer3PacketData(const QPcapLayer3PacketData &other)
     : QSharedData(), _layer3Proto(other._layer3Proto),
       _payload(other._payload), _timestamp(other._timestamp) { }
-  virtual QString english() const;
+  virtual QString toText() const;
 };
 
 class LIBQPCAPSHARED_EXPORT QPcapLayer3Packet {
@@ -43,12 +43,12 @@ public:
   inline quint16 layer3Proto() const { return d->_layer3Proto; }
   inline QByteArray payload() const { return d->_payload; }
   inline bool isNull() const { return payload().isNull(); }
-  inline QString english() const { return d->english(); }
+  inline QString toText() const { return d->toText(); }
   inline quint64 timestamp() const { return d->_timestamp; }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapLayer3Packet &pp) {
-  dbg.nospace() << pp.english();
+  dbg.nospace() << pp.toText();
   return dbg.space();
 }
 

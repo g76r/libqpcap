@@ -37,7 +37,7 @@ public:
   }
   inline quint32 wirelen() const { return _wirelen; }
   inline QByteArray payload() const { return _payload; }
-  inline QString english() const {
+  inline QString toText() const {
     return QString("PcapPacket(%1, %2, %3, %4)")
         .arg(timestamp().time().toString("HH:mm:ss,zzz")).arg(_wirelen)
         .arg(_payload.size()).arg(_payload.toHex().constData());
@@ -61,11 +61,11 @@ public:
   inline quint64 usecSince1970() const { return d->usecSince1970(); }
   inline quint32 wirelen() const { return d->wirelen(); }
   inline QByteArray payload() const { return d->payload(); }
-  inline QString english() const { return d->english(); }
+  inline QString toText() const { return d->toText(); }
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapLayer1Packet &pp) {
-  dbg.nospace() << pp.english();
+  dbg.nospace() << pp.toText();
   return dbg.space();
 }
 
