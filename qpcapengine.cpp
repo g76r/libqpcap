@@ -17,7 +17,8 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapLayer2Packet>("QPcapLayer2Packet");
   qRegisterMetaType<QPcapLayer3Packet>("QPcapLayer3Packet");
   qRegisterMetaType<QPcapIPv4Packet>("QPcapIPv4Packet");
-  qRegisterMetaType<QPcapTcpPacketData>("QPcapTcpPacketData");
+  qRegisterMetaType<QPcapTcpPacket>("QPcapTcpPacket");
+  qRegisterMetaType<QPcapTcpConversation>("QPcapTcpConversation");
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
   connect(_thread, SIGNAL(finished()), this, SIGNAL(captureTerminated()));
 }
