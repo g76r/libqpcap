@@ -51,13 +51,11 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
   switch(c->_state) {
   case AwaitingRequest:
     // no packet yet seen, this should be the first packet of a request
-    c->_buf.append(packet.payload());
     hasRequestPacket(packet, c);
     break;
   case InRequest:
     if (isUpstream != c->_switched) { // client to server
       // regular request packet
-      c->_buf.append(packet.payload());
       hasRequestPacket(packet, c);
     } else { // server to client
       // request is terminated since the new response arrives
@@ -71,7 +69,6 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       else
         emit discardUpstreamBuffer(c->_tcp);
       // anyway, this is a response packet and should be processed
-      c->_buf.append(packet.payload());
       hasResponsePacket(packet, c);
     }
     break;
@@ -82,7 +79,6 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       // therefore we decide to forget about 100-continue
       c->_state = InRequest;
       // process as regular request packet
-      c->_buf.append(packet.payload());
       hasRequestPacket(packet, c);
     } else { // server to client
       has100ContinueResponsePacket(packet, c);
@@ -103,11 +99,9 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       else
         emit discardUpstreamBuffer(c->_tcp);
       // anyway, this is a request packet and should be processed
-      c->_buf.append(packet.payload());
       hasRequestPacket(packet, c);
     } else { // server to client
       // regular response packet
-      c->_buf.append(packet.payload());
       hasResponsePacket(packet, c);
     }
     break;
@@ -124,7 +118,6 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       // desynchronization due to lost packets during capture
       emit discardUpstreamBuffer(c->_tcp);
       // process packet as the first packet of a request
-      c->_buf.append(packet.payload());
       hasRequestPacket(packet, c);
     }
     break;
@@ -135,6 +128,7 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
 
 void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
                                       QPcapHttpConversation *c) {
+  c->_buf.append(packet.payload());
   if (c->_hit.firstRequestPacket().isNull()) {
     c->_hit.conversation() = c->_tcp;
     c->_hit.firstRequestPacket() = packet;
@@ -228,6 +222,7 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
 
 void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
                                        QPcapHttpConversation *c) {
+  c->_buf.append(packet.payload());
   if (!c->_hit.firstResponseTimestamp())
     c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
   c->_hit.lastResponseTimestamp() = packet.ip().timestamp();
