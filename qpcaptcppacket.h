@@ -12,6 +12,7 @@ class QPcapTcpPacket;
 class LIBQPCAPSHARED_EXPORT QPcapTcpPacketData : public QSharedData {
   friend class QPcapTcpPacket;
 protected:
+  quint64 _id;
   quint16 _srcPort;
   quint16 _dstPort;
   quint32 _seqNumber;
@@ -32,7 +33,7 @@ protected:
   QPcapIPv4Packet _ip;
 
   inline void reset() {
-    _srcPort = _dstPort = _seqNumber = _ackNumber = _headerSize = _ecn
+    _id = _srcPort = _dstPort = _seqNumber = _ackNumber = _headerSize = _ecn
         = _windowSize = _checksum = _urgentPointer = 0;
     _urg = _ack = _psh = _rst = _syn = _fin = false;
     _payload.clear();
@@ -41,7 +42,8 @@ protected:
 public:
   QPcapTcpPacketData(QPcapIPv4Packet packet = QPcapIPv4Packet());
   inline QPcapTcpPacketData(const QPcapTcpPacketData &other)
-    : QSharedData(), _srcPort(other._srcPort), _dstPort(other._dstPort),
+    : QSharedData(), _id(other._id),
+      _srcPort(other._srcPort), _dstPort(other._dstPort),
       _seqNumber(other._seqNumber), _ackNumber(other._ackNumber),
       _headerSize(other._headerSize), _ecn(other._ecn), _urg(other._urg),
       _ack(other._ack), _psh(other._psh), _rst(other._rst), _syn(other._syn),
@@ -49,6 +51,7 @@ public:
       _checksum(other._checksum), _urgentPointer(other._urgentPointer),
       _payload(other._payload), _ip(other._ip) {
   }
+  inline quint64 id() const { return _id; }
   inline quint16 srcPort() const { return _srcPort; }
   inline quint16 dstPort() const { return _dstPort; }
   /** @return an adress:port string, e.g. 127.0.0.1:80
@@ -94,6 +97,7 @@ public:
     d = new QPcapTcpPacketData(packet);
   }
   inline QPcapTcpPacket(const QPcapTcpPacket &other) : d(other.d) { }
+  inline quint64 id() const { return d->id(); }
   inline quint16 srcPort() const { return d->srcPort(); }
   inline quint16 dstPort() const { return d->dstPort(); }
   inline QString src() const { return d->src(); }
@@ -119,8 +123,9 @@ public:
   inline bool isNull() const { return !d->srcPort(); }
   inline bool isEmpty() const { return d->payload().isEmpty(); }
   inline bool operator ==(const QPcapTcpPacket &other) const {
-    return seqNumber() == other.seqNumber(); // TODO use a global packet id
+    return id() == other.id();
   }
+  static void resetPacketCounter();
 };
 
 inline QDebug operator<<(QDebug dbg, const QPcapTcpPacket &pp) {

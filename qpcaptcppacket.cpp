@@ -1,6 +1,10 @@
 #include "qpcaptcppacket.h"
 
-QPcapTcpPacketData::QPcapTcpPacketData(QPcapIPv4Packet packet) : _ip(packet) {
+static QAtomicInt _packetCounter = 1;
+
+QPcapTcpPacketData::QPcapTcpPacketData(QPcapIPv4Packet packet)
+  : _id(packet.isNull() ? 0 : _packetCounter.fetchAndAddRelaxed(1)),
+    _ip(packet) {
   if (packet.layer4Proto() != QPcapIPv4Packet::TCP) { // ignore non-TCP packets
     reset();
     return;
@@ -47,6 +51,11 @@ QString QPcapTcpPacketData::english() const {
     flags.append('S');
   if (fin())
     flags.append('F');
-  return QString("QPcapTcpPacket(%1, %2, %3, %4, %5)").arg(src()).arg(dst())
+  return QString("QPcapTcpPacket(%1, %2, %3, %4, %5, %6)").arg(id())
+      .arg(src()).arg(dst())
       .arg(_seqNumber).arg(flags).arg(payload().size());
+}
+
+void QPcapTcpPacket::resetPacketCounter() {
+  _packetCounter = 1;
 }

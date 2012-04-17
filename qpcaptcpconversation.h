@@ -39,7 +39,7 @@ public:
       QPcapTcpPacket firstPacket = QPcapTcpPacket()) {
     d = new QPcapTcpConversationData(firstPacket); }
   inline QPcapTcpConversation(const QPcapTcpConversation &other) : d(other.d) { }
-  inline quint32 id() const { return d->_id; }
+  inline quint64 id() const { return d->_id; }
   inline QPcapTcpPacket firstPacket() const { return d->_firstPacket; }
   inline QString english() const {
     return QString("PcapTcpConversation(%1, %2, %3)").arg(d->_id)
