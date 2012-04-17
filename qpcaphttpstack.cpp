@@ -4,7 +4,7 @@
 QPcapHttpStack::QPcapHttpStack(QObject *parent) : QObject(parent),
   _requestRE("\\s*(GET|POST|HEAD)\\s+(\\S+)\\s+HTTP/1.[01]\\s*\r?"),
   _headerRE("(\\w+):\\s+(\\S*)\\s*\r?"),
-  _100ContinueRE("HTTP/\\d\\.\\d\\s+100.*", Qt::CaseInsensitive),
+  _100ContinueRE(".*HTTP/\\d\\.\\d\\s+100.*", Qt::CaseInsensitive),
   _responseRE("HTTP/\\d\\.\\d\\s+(\\d\\d\\d)(\\s+(.*))") {
 }
 
@@ -47,7 +47,8 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
                << (isUpstream ? "(upstream)" : "(downstream)");
     return;
   }
-  //qDebug() << conversation.id() << "   " << c->_state;
+  //if (c->_state != NonHttp)
+  //  qDebug() << conversation.id() << "   " << c->_state;
   switch(c->_state) {
   case AwaitingRequest:
     // no packet yet seen, this should be the first packet of a request
@@ -77,6 +78,8 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
     if (isUpstream != c->_switched) { // client to server
       // 100-continue is asked for but not waited for (or packet has been lost)
       // therefore we decide to forget about 100-continue
+      qDebug() << c->_tcp.id()
+               << "... 100-continue expected but not found (case 2)" << packet;
       c->_state = InRequest;
       // process as regular request packet
       hasRequestPacket(packet, c);
@@ -149,7 +152,7 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
     if (p < 0) {
-      if (c->_buf.size() >= 2048) {
+      if (c->_state == AwaitingRequest && c->_buf.size() >= 2048) {
         // don't have yet seen a \n within first bytes of a request buffer
         // this should be main case were a non http conversation is detected
         //qDebug() << c->_tcp.id() << "oo6 HTTP inconsistency detected, probably "
@@ -205,7 +208,7 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
           c->_hit.host() = _headerRE.cap(2);
         } else if (key.compare("Expect", Qt::CaseInsensitive) == 0) {
           if (_headerRE.cap(2).contains("100-continue", Qt::CaseInsensitive)) {
-            //qDebug() << c->_tcp.id() << "... Expect: 100-continue detected";
+            //qDebug() << c->_tcp.id() << "... Expect: 100-continue detected" << packet;
             c->_state = Awaiting100Continue;
           }
         }
@@ -223,8 +226,12 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
 void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
                                        QPcapHttpConversation *c) {
   c->_buf.append(packet.payload());
-  if (!c->_hit.firstResponseTimestamp())
+  if (!c->_hit.firstResponseTimestamp()) {
+    //qDebug() << c->_tcp.id() << "=== setting timestamp" << packet;
     c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
+  } else {
+    //qDebug() << c->_tcp.id() << "    not setting timestamp" << packet;
+  }
   c->_hit.lastResponseTimestamp() = packet.ip().timestamp();
   if (!c->_hit.returnCode()) {
     QString s(c->_buf.constData());
@@ -253,15 +260,15 @@ void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
 
 void QPcapHttpStack::has100ContinueResponsePacket(QPcapTcpPacket packet,
                                                   QPcapHttpConversation *c) {
-  QString s(c->_buf.constData());
-  int p = s.indexOf('\n');
-  if (p < 0)
-    return;
-  if (_100ContinueRE.exactMatch(s.left(p))) {
+  if (_100ContinueRE.exactMatch(packet.payload().constData())) {
     // ignore packet and get back in regular InRequest state
+    //qDebug() << c->_tcp.id()
+    //         << "... 100-continue found" << packet;
     c->_state = InRequest;
   } else {
     // no 100-continue has been seen, this is a regular response packet
+    qDebug() << c->_tcp.id()
+             << "... 100-continue expected but not found (case 1)" << packet;
     c->_state = InResponse;
     hasResponsePacket(packet, c);
   }
