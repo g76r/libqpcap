@@ -26,6 +26,7 @@ public:
   QPcapEngine(QString filename);
   void loadFile(QString filename);
   void start();
+  bool isRunning() const;
 
 signals:
   void captureTerminated();

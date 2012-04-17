@@ -36,6 +36,10 @@ void QPcapEngine::start() {
   _thread->start();
 }
 
+bool QPcapEngine::isRunning() const {
+  return _thread && _thread->isRunning();
+}
+
 void QPcapEngine::loadFile(QString filename) {
   char errbuf[PCAP_ERRBUF_SIZE];
   if (_pcap) {
