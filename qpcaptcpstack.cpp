@@ -43,7 +43,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     if (packet.seqNumber() == conversation.nextUpstreamNumber()) {
       emit tcpUpstreamPacket(packet, conversation);
       conversation.nextUpstreamNumber() +=
-          packet.syn() ? 1: packet.payload().size();
+          packet.syn() ? 1 : packet.payload().size();
       QPcapTcpPacket packet2;
       foreach (QPcapTcpPacket p, _upstreamBuffer.values(conversation))
         if (p.seqNumber() == conversation.nextUpstreamNumber()) {
@@ -51,10 +51,10 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
           break;
         }
       if (!packet2.isNull()) {
+        //qDebug() << "  removing buffered packet" << packet2;
+        _upstreamBuffer.remove(conversation, packet2);
         //qDebug() << "  found upstream buffered packet" << packet2;
         dispatchPacket(packet2, conversation); // this is a recursive call
-        //qDebug() << "  removing buffered packet" << packet2;
-        _upstreamBuffer.values(conversation).removeAll(packet2);
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextUpstreamNumber()) < 0) {
@@ -88,10 +88,10 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
           break;
         }
       if (!packet2.isNull()) {
+        //qDebug() << conversation.id() << "  removing buffered packet" << packet2;
+        _downstreamBuffer.remove(conversation, packet2);
         //qDebug() << conversation.id() << "  found downstream buffered packet" << packet2;
         dispatchPacket(packet2, conversation); // this is a recursive call
-        //qDebug() << conversation.id() << "  removing buffered packet" << packet2;
-        _downstreamBuffer.values(conversation).removeAll(packet2);
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextDownstreamNumber()) < 0){
@@ -112,16 +112,16 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     //qDebug() << conversation.id() << "XXX";
     emit conversationFinished(conversation);
     _conversations.remove(conversation);
-    if (_upstreamBuffer.values(conversation).size() != 0) { // should be useless
+    //if (_upstreamBuffer.values(conversation).size() != 0) { // should be useless
       //qDebug() << conversation.id() << "  remaining upstream buffered packets"
       //         << _upstreamBuffer.size();
-      _upstreamBuffer.remove(conversation);
-    }
-    if (_downstreamBuffer.values(conversation).size() != 0) { // should be useless
-      //qDebug() << conversation.id() << "  remaining downstream buffered packets"
-      //         << _downstreamBuffer.size();
-      _downstreamBuffer.remove(conversation);
-    }
+    //}
+    _upstreamBuffer.remove(conversation);
+    //if (_downstreamBuffer.values(conversation).size() != 0) { // should be useless
+    //qDebug() << conversation.id() << "  remaining downstream buffered packets"
+    //         << _downstreamBuffer.size();
+    //}
+    _downstreamBuffer.remove(conversation);
   }
 }
 
