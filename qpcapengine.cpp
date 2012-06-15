@@ -20,7 +20,8 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapTcpPacket>("QPcapTcpPacket");
   qRegisterMetaType<QPcapTcpConversation>("QPcapTcpConversation");
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
-  connect(_thread, SIGNAL(finished()), this, SIGNAL(captureTerminated()));
+  connect(_thread, SIGNAL(finished()), this, SIGNAL(captureFinished()));
+  connect(_thread, SIGNAL(finished()), this, SLOT(finishing()));
 }
 
 QPcapEngine::QPcapEngine() : _pcap(0) {
@@ -74,4 +75,8 @@ void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
     that->packetHandler(pkthdr, packet);
   else
     qDebug() << "QPcapEngine::callback with null object pointer";
+}
+
+void QPcapEngine::finishing() {
+  //qDebug() << "pcap capture finished";
 }

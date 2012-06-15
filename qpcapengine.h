@@ -28,8 +28,11 @@ public:
   void start();
   bool isRunning() const;
 
+private slots:
+  void finishing();
+
 signals:
-  void captureTerminated();
+  void captureFinished();
   void layer1PacketReceived(QPcapLayer1Packet packet);
 
 private:
