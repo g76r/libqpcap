@@ -59,6 +59,13 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
       // regular request packet
       hasRequestPacket(packet, c);
     } else { // server to client
+      if (_100ContinueRE.exactMatch(packet.payload().constData())) {
+        // this is a late 100 continue packet (comming after the request
+        // continuation) so we ignore it
+        qDebug() << c->_tcp.id()
+                 << "... late 100-continue found and ignored" << packet;
+        break;
+      }
       // request is terminated since the new response arrives
       c->_state = InResponse;
       c->_buf.clear();
@@ -76,7 +83,8 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
   case Awaiting100Continue:
     // a request packet containing "Expect: 100-continue" has just been seen
     if (isUpstream != c->_switched) { // client to server
-      // 100-continue is asked for but not waited for (or packet has been lost)
+      // 100-continue is asked for but not waited for (or packet has been lost,
+      // or packet is not in the same order in capture file and reality)
       // therefore we decide to forget about 100-continue
       qDebug() << c->_tcp.id()
                << "... 100-continue expected but not found (case 2)" << packet;
