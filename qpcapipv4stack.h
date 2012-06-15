@@ -6,10 +6,12 @@
 #include "qpcapipv4packet.h"
 #include "qpcaplayer2packet.h"
 
+class QPcapEthernetStack;
+
 class LIBQPCAPSHARED_EXPORT QPcapIPv4Stack : public QObject {
   Q_OBJECT
 public:
-  inline explicit QPcapIPv4Stack(QObject *parent = 0) : QObject(parent) { }
+  explicit QPcapIPv4Stack(QObject *parent, QPcapEthernetStack *stack);
 
 signals:
   /** Emititng generic layer 3 defragmented packet.
@@ -18,6 +20,8 @@ signals:
   /** Emititng IPv4 defragmented packet.
     */
   void ipv4PacketReceived(QPcapIPv4Packet packet);
+  void captureStarted();
+  void captureFinished();
 
 public slots:
   /** Receiving layer 2 packet, potentially fragmented.

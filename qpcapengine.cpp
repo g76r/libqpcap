@@ -12,7 +12,6 @@
 
 void QPcapEngine::init() {
   _thread = new QPcapThread(this);
-  moveToThread(_thread);
   qRegisterMetaType<QPcapLayer1Packet>("QPcapLayer1Packet");
   qRegisterMetaType<QPcapLayer2Packet>("QPcapLayer2Packet");
   qRegisterMetaType<QPcapLayer3Packet>("QPcapLayer3Packet");
@@ -20,20 +19,20 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapTcpPacket>("QPcapTcpPacket");
   qRegisterMetaType<QPcapTcpConversation>("QPcapTcpConversation");
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
-  connect(_thread, SIGNAL(finished()), this, SIGNAL(captureFinished()));
   connect(_thread, SIGNAL(finished()), this, SLOT(finishing()));
 }
 
-QPcapEngine::QPcapEngine() : _pcap(0) {
+QPcapEngine::QPcapEngine() : _pcap(0), _packetsCount(0) {
   init();
 }
 
-QPcapEngine::QPcapEngine(QString filename) : _pcap(0) {
+QPcapEngine::QPcapEngine(QString filename) : _pcap(0), _packetsCount(0) {
   init();
   loadFile(filename);
 }
 
 void QPcapEngine::start() {
+  moveToThread(_thread);
   _thread->start();
 }
 
@@ -47,6 +46,8 @@ void QPcapEngine::loadFile(QString filename) {
     pcap_close(_pcap);
     _pcap = 0;
   }
+  emit captureStarted();
+  emit packetsCountTick(_packetsCount = 0);
   _pcap = pcap_open_offline(filename.toUtf8(), errbuf);
   if (_pcap)
     _filename = filename;
@@ -64,7 +65,10 @@ void QPcapEngine::packetHandler(const struct pcap_pkthdr* pkthdr,
   //         << ba.toHex();
   QPcapLayer1Packet pp(pkthdr, packet);
   //qDebug() << pp;
+  ++_packetsCount;
   emit layer1PacketReceived(pp);
+  if (_packetsCount % 1000 == 0)
+    emit packetsCountTick(_packetsCount);
 }
 
 void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
@@ -79,4 +83,10 @@ void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
 
 void QPcapEngine::finishing() {
   //qDebug() << "pcap capture finished";
+  emit packetsCountTick(_packetsCount);
+  emit captureFinished();
+  if (_pcap) {
+    pcap_close(_pcap);
+    _pcap = 0;
+  }
 }

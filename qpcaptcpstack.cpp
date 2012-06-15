@@ -1,4 +1,13 @@
 #include "qpcaptcpstack.h"
+#include "qpcapipv4stack.h"
+
+QPcapTcpStack::QPcapTcpStack(QObject *parent, QPcapIPv4Stack *stack)
+  : QObject(parent), _packetsCount(0) {
+  connect(stack, SIGNAL(captureStarted()), this, SLOT(starting()));
+  connect(stack, SIGNAL(captureFinished()), this, SLOT(finishing()));
+  connect(stack, SIGNAL(ipv4PacketReceived(QPcapIPv4Packet)),
+          this, SLOT(ipPacketReceived(QPcapIPv4Packet)));
+}
 
 void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   if (packet.layer4Proto() != QPcapIPv4Packet::TCP) {
@@ -33,6 +42,9 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
 
 void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
                                   QPcapTcpConversation conversation) {
+  ++_packetsCount;
+  if (_packetsCount % 1000 == 0)
+    emit packetsCountTick(_packetsCount);
   if (conversation.matchesSameStream(packet)) {
     // upstream packet (client to server)
     //qDebug() << "  upstream" << conversation.id() << packet.seqNumber() << conversation.nextUpstreamNumber() << packet.payload().size();
@@ -141,7 +153,19 @@ void QPcapTcpStack::discardDownstreamBuffer(QPcapTcpConversation conversation) {
   conversation.downstreamNumbersInitialized() = false;
 }
 
-void QPcapTcpStack::reset() {
+void QPcapTcpStack::starting() {
+  QPcapTcpPacket::resetPacketCounter();
+  QPcapTcpConversation::resetConversationCounter();
+  _conversations.clear();
+  _upstreamBuffer.clear();
+  _downstreamBuffer.clear();
+  emit captureStarted();
+  emit packetsCountTick(_packetsCount = 0);
+}
+
+void QPcapTcpStack::finishing() {
+  emit packetsCountTick(_packetsCount);
+  emit captureFinished();
   _conversations.clear();
   _upstreamBuffer.clear();
   _downstreamBuffer.clear();

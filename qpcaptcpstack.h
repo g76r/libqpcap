@@ -8,15 +8,18 @@
 #include "qpcaptcppacket.h"
 #include <QMultiMap>
 
+class QPcapIPv4Stack;
+
 class LIBQPCAPSHARED_EXPORT QPcapTcpStack : public QObject {
   Q_OBJECT
 private:
   QSet<QPcapTcpConversation> _conversations;
   QMultiMap<QPcapTcpConversation, QPcapTcpPacket> _upstreamBuffer;
   QMultiMap<QPcapTcpConversation, QPcapTcpPacket> _downstreamBuffer;
+  unsigned long _packetsCount;
 
 public:
-  explicit QPcapTcpStack(QObject *parent = 0) : QObject(parent) { }
+  explicit QPcapTcpStack(QObject *parent, QPcapIPv4Stack *stack);
 
 signals:
   /** Emitting ordered data stream chunk, client to server.
@@ -35,6 +38,9 @@ signals:
                            QPcapTcpConversation conversation);
   void conversationStarted(QPcapTcpConversation conversation);
   void conversationFinished(QPcapTcpConversation conversation);
+  void packetsCountTick(unsigned long count);
+  void captureStarted();
+  void captureFinished();
 
 public slots:
   /** Receiving IP packet, potentially retransmitted or in wrong order.
@@ -49,7 +55,10 @@ public slots:
   void discardDownstreamBuffer(QPcapTcpConversation conversation);
   /** Discard any conversation or buffered packet.
     */
-  void reset();
+
+private slots:
+  void starting();
+  void finishing();
 
 private:
   void dispatchPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);

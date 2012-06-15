@@ -20,6 +20,7 @@ private:
   pcap_t *_pcap;
   QString _filename;
   QPcapThread *_thread;
+  unsigned long _packetsCount;
 
 public:
   QPcapEngine();
@@ -32,8 +33,11 @@ private slots:
   void finishing();
 
 signals:
+  // LATER propagate captureXXX() signals to all stacks
+  void captureStarted();
   void captureFinished();
   void layer1PacketReceived(QPcapLayer1Packet packet);
+  void packetsCountTick(unsigned long count);
 
 private:
   void init();

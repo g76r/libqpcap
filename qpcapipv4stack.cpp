@@ -1,4 +1,13 @@
 #include "qpcapipv4stack.h"
+#include "qpcapethernetstack.h"
+
+QPcapIPv4Stack::QPcapIPv4Stack(QObject *parent, QPcapEthernetStack *stack)
+  : QObject(parent) {
+  connect(stack, SIGNAL(layer2PacketReceived(QPcapLayer2Packet)),
+          this, SLOT(layer2PacketReceived(QPcapLayer2Packet)));
+  connect(stack, SIGNAL(captureStarted()), this, SIGNAL(captureStarted()));
+  connect(stack, SIGNAL(captureFinished()), this, SIGNAL(captureFinished()));
+}
 
 void QPcapIPv4Stack::layer2PacketReceived(QPcapLayer2Packet packet) {
   if (packet.layer3Proto() != 0x800) { // ignore non-IPv4 packets

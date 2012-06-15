@@ -50,9 +50,10 @@ private:
   QHash<quint64, QPcapHttpConversation*> _conversations;
   QRegExp _requestRE, _headerRE, _100ContinueRE, _responseRE;
   QList<QPcapHttpFilter> _filters;
+  unsigned long _hitsCount;
 
 public:
-  explicit QPcapHttpStack(QObject *parent = 0);
+  explicit QPcapHttpStack(QObject *parent, QPcapTcpStack *stack);
   void connectToLowerStack(QPcapTcpStack &stack);
   inline void addFilter(QString regex, QPcapHttpDirection direction = Anystream,
                         int captureRank = 1) {
@@ -73,6 +74,9 @@ signals:
     * from some case of corrupted data in downstream flow.
     */
   void discardDownstreamBuffer(QPcapTcpConversation conversation);
+  void hitsCountTick(unsigned long count);
+  void captureStarted();
+  void captureFinished();
 
 public slots:
   void conversationStarted(QPcapTcpConversation conversation);
@@ -82,6 +86,10 @@ public slots:
                            QPcapTcpConversation conversation);
   void conversationFinished(QPcapTcpConversation conversation);
 
+private slots:
+  void starting();
+  void finishing();
+
 private:
   void hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
                     QPcapTcpConversation conversation);
@@ -90,7 +98,9 @@ private:
   // upstream or not).
   void hasRequestPacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
   void hasResponsePacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
-  void has100ContinueResponsePacket(QPcapTcpPacket packet, QPcapHttpConversation *c);
+  void has100ContinueResponsePacket(QPcapTcpPacket packet,
+                                    QPcapHttpConversation *c);
+  void emitHit(const QPcapHttpHit &hit);
 };
 
 #endif // QPCAPHTTPSTACK_H

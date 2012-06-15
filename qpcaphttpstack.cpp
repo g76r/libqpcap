@@ -1,11 +1,26 @@
 #include "qpcaphttpstack.h"
 #include <QtDebug>
 
-QPcapHttpStack::QPcapHttpStack(QObject *parent) : QObject(parent),
-  _requestRE("\\s*(GET|POST|HEAD)\\s+(\\S+)\\s+HTTP/1.[01]\\s*\r?"),
-  _headerRE("(\\w+):\\s+(\\S*)\\s*\r?"),
-  _100ContinueRE(".*HTTP/\\d\\.\\d\\s+100.*", Qt::CaseInsensitive),
-  _responseRE("HTTP/\\d\\.\\d\\s+(\\d\\d\\d)(\\s+(.*))") {
+QPcapHttpStack::QPcapHttpStack(QObject *parent, QPcapTcpStack *stack)
+  : QObject(parent),
+    _requestRE("\\s*(GET|POST|HEAD)\\s+(\\S+)\\s+HTTP/1.[01]\\s*\r?"),
+    _headerRE("(\\w+):\\s+(\\S*)\\s*\r?"),
+    _100ContinueRE(".*HTTP/\\d\\.\\d\\s+100.*", Qt::CaseInsensitive),
+    _responseRE("HTTP/\\d\\.\\d\\s+(\\d\\d\\d)(\\s+(.*))"), _hitsCount(0) {
+  connect(stack, SIGNAL(conversationStarted(QPcapTcpConversation)),
+          this, SLOT(conversationStarted(QPcapTcpConversation)));
+  connect(stack, SIGNAL(conversationFinished(QPcapTcpConversation)),
+          this, SLOT(conversationFinished(QPcapTcpConversation)));
+  connect(stack, SIGNAL(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
+          this, SLOT(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
+  connect(stack, SIGNAL(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
+          this, SLOT(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
+  connect(this, SIGNAL(discardUpstreamBuffer(QPcapTcpConversation)),
+          stack, SLOT(discardUpstreamBuffer(QPcapTcpConversation)));
+  connect(this, SIGNAL(discardDownstreamBuffer(QPcapTcpConversation)),
+          stack, SLOT(discardDownstreamBuffer(QPcapTcpConversation)));
+  connect(stack, SIGNAL(captureFinished()), this, SLOT(finishing()));
+  connect(stack, SIGNAL(captureStarted()), this, SLOT(starting()));
 }
 
 void QPcapHttpStack::conversationStarted(QPcapTcpConversation conversation) {
@@ -30,7 +45,7 @@ void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
     return;
   if (c->_hit.isValid()) {
     // last response packet received has never been reported before
-    emit httpHit(c->_hit);
+    emitHit(c->_hit);
   }
   _conversations.remove(conversation.id());
   delete c;
@@ -98,7 +113,7 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
   case InResponse:
     if (isUpstream != c->_switched) { // client to server
       // response is terminated since a new request arrives
-      emit httpHit(c->_hit);
+      emitHit(c->_hit);
       c->_buf.clear();
       c->_hit = QPcapHttpHit();
       c->_state = AwaitingRequest;
@@ -282,18 +297,23 @@ void QPcapHttpStack::has100ContinueResponsePacket(QPcapTcpPacket packet,
   }
 }
 
-void QPcapHttpStack::connectToLowerStack(QPcapTcpStack &stack) {
-  connect(&stack, SIGNAL(conversationStarted(QPcapTcpConversation)),
-          this, SLOT(conversationStarted(QPcapTcpConversation)));
-  connect(&stack, SIGNAL(conversationFinished(QPcapTcpConversation)),
-          this, SLOT(conversationFinished(QPcapTcpConversation)));
-  connect(&stack, SIGNAL(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
-          this, SLOT(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
-  connect(&stack, SIGNAL(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
-          this, SLOT(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
-  connect(this, SIGNAL(discardUpstreamBuffer(QPcapTcpConversation)),
-          &stack, SLOT(discardUpstreamBuffer(QPcapTcpConversation)));
-  connect(this, SIGNAL(discardDownstreamBuffer(QPcapTcpConversation)),
-          &stack, SLOT(discardDownstreamBuffer(QPcapTcpConversation)));
+void QPcapHttpStack::starting() {
+  qDeleteAll(_conversations.values());
+  _conversations.clear();
+  emit captureStarted();
+  emit hitsCountTick(_hitsCount = 0);
+}
 
+void QPcapHttpStack::finishing() {
+  emit hitsCountTick(_hitsCount);
+  emit captureFinished();
+  qDeleteAll(_conversations.values());
+  _conversations.clear();
+}
+
+void QPcapHttpStack::emitHit(const QPcapHttpHit &hit) {
+  emit httpHit(hit);
+  ++_hitsCount;
+  if (_hitsCount % 20 == 0)
+    emit hitsCountTick(_hitsCount);
 }
