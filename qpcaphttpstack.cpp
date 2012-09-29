@@ -1,12 +1,14 @@
 #include "qpcaphttpstack.h"
 #include <QtDebug>
 
-QPcapHttpStack::QPcapHttpStack(QObject *parent, QPcapTcpStack *stack)
+QPcapHttpStack::QPcapHttpStack(QObject *parent, QPcapTcpStack *stack,
+                               int maxDataKept)
   : QObject(parent),
     _requestRE("\\s*(GET|POST|HEAD)\\s+(\\S+)\\s+HTTP/1.[01]\\s*\r?"),
     _headerRE("(\\w+):\\s+(\\S*)\\s*\r?"),
     _100ContinueRE(".*HTTP/\\d\\.\\d\\s+100.*", Qt::CaseInsensitive),
-    _responseRE("HTTP/\\d\\.\\d\\s+(\\d\\d\\d)(\\s+(.*))"), _hitsCount(0) {
+    _responseRE("HTTP/\\d\\.\\d\\s+(\\d\\d\\d)(\\s+(.*))"), _hitsCount(0),
+    _maxDataKept(maxDataKept) {
   connect(stack, SIGNAL(conversationStarted(QPcapTcpConversation)),
           this, SLOT(conversationStarted(QPcapTcpConversation)));
   connect(stack, SIGNAL(conversationFinished(QPcapTcpConversation)),
@@ -45,7 +47,7 @@ void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
     return;
   if (c->_hit.isValid()) {
     // last response packet received has never been reported before
-    emitHit(c->_hit);
+    emitHit(c);
   }
   _conversations.remove(conversation.id());
   delete c;
@@ -113,7 +115,7 @@ void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
   case InResponse:
     if (isUpstream != c->_switched) { // client to server
       // response is terminated since a new request arrives
-      emitHit(c->_hit);
+      emitHit(c);
       c->_buf.clear();
       c->_hit = QPcapHttpHit();
       c->_state = AwaitingRequest;
@@ -159,18 +161,8 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
     c->_hit.conversation() = c->_tcp;
     c->_hit.firstRequestPacket() = packet;
   }
-  //qDebug() << "looking for upstream custom fields" << _filters.size();
-  for (int i = 0; i < _filters.size(); ++i) {
-    QPcapHttpFilter &f = _filters[i];
-    //qDebug() << "testing upstream custom field" << i << f._direction << (int)Upstream << f._re.pattern() << c->_buf.size();
-    if ((f._direction == Upstream || f._direction == Anystream)
-        && c->_hit.customField(i).isNull()) {
-      if (f._re.indexIn(c->_buf.constData()) >= 0) {
-        //qDebug() << "found upstream custom field" << i << f._re.cap(f._captureRank);
-        c->_hit.setCustomField(i, f._re.cap(f._captureRank));
-      }
-    }
-  }
+  if (c->_upstreamData.size() < _maxDataKept)
+    c->_upstreamData.append(packet.payload());
   forever {
     QString s(c->_buf.constData());
     int p = s.indexOf('\n');
@@ -249,6 +241,8 @@ void QPcapHttpStack::hasRequestPacket(QPcapTcpPacket packet,
 void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
                                        QPcapHttpConversation *c) {
   c->_buf.append(packet.payload());
+  if (c->_downstreamData.size() < _maxDataKept)
+    c->_downstreamData.append(packet.payload());
   if (!c->_hit.firstResponseTimestamp()) {
     //qDebug() << c->_tcp.id() << "=== setting timestamp" << packet;
     c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
@@ -266,17 +260,6 @@ void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
     } else if(c->_buf.size() > 256) {
       // no longer scan for return code (return code packetd lost or non-HTTP)
       c->_hit.returnCode() = -1;
-    }
-  }
-  //qDebug() << "looking for downstream custom fields" << _filters.size();
-  for (int i = 0; i < _filters.size(); ++i) {
-    QPcapHttpFilter &f = _filters[i];
-    if ((f._direction == Downstream || f._direction == Anystream)
-        && c->_hit.customField(i).isNull()) {
-      if (f._re.indexIn(c->_buf.constData()) >= 0) {
-        //qDebug() << "found downstream custom field" << i << f._re.cap(f._captureRank);
-        c->_hit.setCustomField(i, f._re.cap(f._captureRank));
-      }
     }
   }
 }
@@ -311,8 +294,14 @@ void QPcapHttpStack::finishing() {
   _conversations.clear();
 }
 
-void QPcapHttpStack::emitHit(const QPcapHttpHit &hit) {
-  emit httpHit(hit);
+void QPcapHttpStack::emitHit(QPcapHttpConversation *c) {
+  //qDebug() << "about to emit hit" << c->_hit;
+  //qDebug() << "packets:" << c->_hit.conversation().packets().size()
+  //         << "data:" << c->_buf.size() << c->_upstreamData.size()
+  //         << c->_downstreamData.size();
+  c->_upstreamData.truncate(_maxDataKept);
+  c->_downstreamData.truncate(_maxDataKept);
+  emit httpHit(c->_hit, c->_upstreamData, c->_downstreamData);
   ++_hitsCount;
   if (_hitsCount % 20 == 0)
     emit hitsCountTick(_hitsCount);
