@@ -9,6 +9,18 @@ QPcapTcpStack::QPcapTcpStack(QObject *parent, QPcapIPv4Stack *stack)
           this, SLOT(ipPacketReceived(QPcapIPv4Packet)));
 }
 
+quint64 QPcapTcpStack::higherPortPeer(QPcapTcpPacket packet) {
+  return (packet.dstPort() > packet.srcPort())
+      ? ((packet.ip().dstAsInt() << 16) + packet.dstPort())
+      : ((packet.ip().srcAsInt() << 16) + packet.srcPort());
+}
+
+quint64 QPcapTcpStack::lowerPortPeer(QPcapTcpPacket packet) {
+  return (packet.dstPort() < packet.srcPort())
+      ? ((packet.ip().dstAsInt() << 16) + packet.dstPort())
+      : ((packet.ip().srcAsInt() << 16) + packet.srcPort());
+}
+
 void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   if (packet.layer4Proto() != QPcapIPv4Packet::TCP) {
     return; // ignoring non-tcp packets
@@ -18,12 +30,19 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
     qDebug() << "   ignoring malformed tcp packet";
     return;
   }
-  foreach (QPcapTcpConversation c, _conversations) {
-    if (c.matchesEitherStream(tcp)) {
+  // conversations are indexed depending on their (addr,port) couples, since
+  // we do not yet now which port is upstream and which is downstream, they are
+  // indexed depending on the higher or lower of two ports
+  // then the smaller collections of two is searched for a matching stream,
+  // the smaller should contain 0 or 1 elements, whereas the larger can contain
+  // thousands when the same server has thousands client connections at a time
+  QPcapIPv4PortConversationSignature sig(tcp);
+  foreach (QPcapTcpConversation c, _conversations.values(sig)) {
+    //if (c.matchesEitherStream(tcp)) {
       //qDebug() << c.id() << "   received established tcp packet" << tcp << c.nextUpstreamNumber() << c.nextDownstreamNumber();
       dispatchPacket(tcp, c);
       return;
-    }
+    //}
   }
   if (tcp.fin() || tcp.rst()) {
     // this avoids creating conversation for trailing fin-ack packets when the
@@ -35,7 +54,7 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   }
   QPcapTcpConversation c(tcp);
   //qDebug() << c.id() << "   received new tcp packet" << tcp;
-  _conversations.insert(c);
+  _conversations.insert(sig, c);
   emit conversationStarted(c);
   dispatchPacket(tcp, c);
 }
@@ -123,7 +142,8 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
   if (packet.rst() || packet.fin()) {
     //qDebug() << conversation.id() << "XXX";
     emit conversationFinished(conversation);
-    _conversations.remove(conversation);
+    _conversations.remove(
+          QPcapIPv4PortConversationSignature(conversation.firstPacket()));
     //if (_upstreamBuffer.values(conversation).size() != 0) { // should be useless
       //qDebug() << conversation.id() << "  remaining upstream buffered packets"
       //         << _upstreamBuffer.size();

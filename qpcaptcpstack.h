@@ -7,13 +7,14 @@
 #include "qpcaptcpconversation.h"
 #include "qpcaptcppacket.h"
 #include <QMultiMap>
+#include "qpcapipv4portconversationsignature.h"
 
 class QPcapIPv4Stack;
 
 class LIBQPCAPSHARED_EXPORT QPcapTcpStack : public QObject {
   Q_OBJECT
 private:
-  QSet<QPcapTcpConversation> _conversations;
+  QMap<QPcapIPv4PortConversationSignature,QPcapTcpConversation> _conversations;
   QMultiMap<QPcapTcpConversation, QPcapTcpPacket> _upstreamBuffer;
   QMultiMap<QPcapTcpConversation, QPcapTcpPacket> _downstreamBuffer;
   unsigned long _packetsCount;
@@ -62,7 +63,8 @@ private slots:
 
 private:
   void dispatchPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);
-
+  inline static quint64 higherPortPeer(QPcapTcpPacket packet);
+  inline static quint64 lowerPortPeer(QPcapTcpPacket packet);
   Q_DISABLE_COPY(QPcapTcpStack)
 };
 

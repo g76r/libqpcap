@@ -8,6 +8,8 @@ DEFINES += LIBQPCAP_LIBRARY
 win32:INCLUDEPATH += c:/WpdPack/Include
 win32:LIBS += c:/WpdPack/Lib/wpcap.lib
 !win32:LIBS += -lpcap
+QMAKE_CXXFLAGS_DEBUG += -pg -fno-default-inline -fno-inline
+QMAKE_LFLAGS_DEBUG += -pg
 
 linux-g++ {
   UI_DIR = ../libqpcap-build-linux/ui
@@ -40,7 +42,8 @@ SOURCES += \
     qpcapethernetpacket.cpp \
     qpcapengine.cpp \
     qpcaphttpstack.cpp \
-    qpcaphttphit.cpp
+    qpcaphttphit.cpp \
+    qpcapipv4portconversationsignature.cpp
 
 HEADERS += qpcap_global.h \
     qpcapthread.h \
@@ -57,7 +60,8 @@ HEADERS += qpcap_global.h \
     qpcapengine.h \
     qpcap_global.h \
     qpcaphttpstack.h \
-    qpcaphttphit.h
+    qpcaphttphit.h \
+    qpcapipv4portconversationsignature.h
 
 symbian {
     MMP_RULES += EXPORTUNFROZEN
