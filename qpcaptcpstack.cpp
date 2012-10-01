@@ -38,11 +38,8 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   // thousands when the same server has thousands client connections at a time
   QPcapIPv4PortConversationSignature sig(tcp);
   foreach (QPcapTcpConversation c, _conversations.values(sig)) {
-    //if (c.matchesEitherStream(tcp)) {
-      //qDebug() << c.id() << "   received established tcp packet" << tcp << c.nextUpstreamNumber() << c.nextDownstreamNumber();
-      dispatchPacket(tcp, c);
-      return;
-    //}
+    dispatchPacket(tcp, c);
+    return;
   }
   if (tcp.fin() || tcp.rst()) {
     // this avoids creating conversation for trailing fin-ack packets when the
@@ -53,7 +50,6 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
     return;
   }
   QPcapTcpConversation c(tcp);
-  //qDebug() << c.id() << "   received new tcp packet" << tcp;
   _conversations.insert(sig, c);
   emit conversationStarted(c);
   dispatchPacket(tcp, c);
@@ -72,6 +68,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
       conversation.upstreamNumbersInitialized() = true;
     }
     if (packet.seqNumber() == conversation.nextUpstreamNumber()) {
+      conversation.packets().append(packet);
       emit tcpUpstreamPacket(packet, conversation);
       conversation.nextUpstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();
@@ -109,6 +106,7 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     }
     //qDebug() << conversation.id() << "  downstream" << packet.seqNumber() << conversation.nextDownstreamNumber() << packet.payload().size();
     if (packet.seqNumber() == conversation.nextDownstreamNumber()) {
+      conversation.packets().append(packet);
       emit tcpDownstreamPacket(packet, conversation);
       conversation.nextDownstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();

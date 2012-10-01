@@ -63,10 +63,6 @@ public:
   inline bool &upstreamNumbersInitialized() { return d->_upstreamNumbersInitialized; }
   inline bool &downstreamNumbersInitialized() { return d->_downstreamNumbersInitialized; }
   inline bool isNull() { return !id(); }
-  /** To avoid huge memory consumption, this list shold be left empty by
-    * network analyzers, however user interface may want to fill it for some
-    * selected conversations or during a limited time.
-    */
   inline QList<QPcapTcpPacket> &packets() { return d->_packets; }
   inline bool operator ==(const QPcapTcpConversation &other) const {
     return d == other.d; }
