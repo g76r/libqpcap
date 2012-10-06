@@ -64,19 +64,14 @@ signals:
 
 public slots:
   void conversationStarted(QPcapTcpConversation conversation);
-  void tcpUpstreamPacket(QPcapTcpPacket packet,
-                         QPcapTcpConversation conversation);
-  void tcpDownstreamPacket(QPcapTcpPacket packet,
-                           QPcapTcpConversation conversation);
   void conversationFinished(QPcapTcpConversation conversation);
+  void tcpPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);
 
 private slots:
   void starting();
   void finishing();
 
 private:
-  void hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
-                    QPcapTcpConversation conversation);
   // following methods are called by tcpPacket() depending
   // on the conversation being swithed or not (i.e. client to server is
   // upstream or not).

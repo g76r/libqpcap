@@ -26,6 +26,7 @@ protected:
   bool _rst;
   bool _syn;
   bool _fin;
+  bool _upstream;
   quint16 _windowSize;
   quint16 _checksum;
   quint16 _urgentPointer; // should be ignored if !_urg
@@ -36,6 +37,7 @@ protected:
     _id = _srcPort = _dstPort = _seqNumber = _ackNumber = _headerSize = _ecn
         = _windowSize = _checksum = _urgentPointer = 0;
     _urg = _ack = _psh = _rst = _syn = _fin = false;
+    _upstream = true;
     _payload.clear();
   }
 
@@ -47,7 +49,8 @@ public:
       _seqNumber(other._seqNumber), _ackNumber(other._ackNumber),
       _headerSize(other._headerSize), _ecn(other._ecn), _urg(other._urg),
       _ack(other._ack), _psh(other._psh), _rst(other._rst), _syn(other._syn),
-      _fin(other._fin), _windowSize(other._windowSize),
+      _fin(other._fin), _upstream(other._upstream),
+      _windowSize(other._windowSize),
       _checksum(other._checksum), _urgentPointer(other._urgentPointer),
       _payload(other._payload), _ip(other._ip) {
   }
@@ -118,6 +121,13 @@ public:
   inline bool rst() const { return d->rst(); }
   inline bool syn() const { return d->syn(); }
   inline bool fin() const { return d->fin(); }
+  /** True if packet is going from client to server.
+   * Beware: if SYN/SYN-ACK exchange was previous capture start, client and
+   * server are randomly chosen (actually: first seen packet source is
+   * assumed to be upstream).
+   */
+  inline bool upstream() const { return d->_upstream; }
+  inline void setUpstream(bool upstream) { d->_upstream = upstream; }
   inline QByteArray payload() const { return d->payload(); }
   inline QPcapIPv4Packet ip() const { return d->ip(); }
   QString toText() const { return d->toText(); }

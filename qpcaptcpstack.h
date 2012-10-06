@@ -23,20 +23,9 @@ public:
   explicit QPcapTcpStack(QObject *parent, QPcapIPv4Stack *stack);
 
 signals:
-  /** Emitting ordered data stream chunk, client to server.
-    * Beware: if SYN/SYN-ACK exchange was previous capture start, client and
-    * server are randomly chosen (actually: first seen packet source is
-    * assumed to be upstream).
+  /** Emitting ordered data stream chunk.
     */
-  void tcpUpstreamPacket(QPcapTcpPacket packet,
-                         QPcapTcpConversation conversation);
-  /** Emitting ordered data stream chunk, server to client.
-    * Beware: if SYN/SYN-ACK exchange was previous capture start, client and
-    * server are randomly chosen (actually: first seen packet source is
-    * assumed to be upstream).
-    */
-  void tcpDownstreamPacket(QPcapTcpPacket packet,
-                           QPcapTcpConversation conversation);
+  void tcpPacket(QPcapTcpPacket packet, QPcapTcpConversation conversation);
   void conversationStarted(QPcapTcpConversation conversation);
   void conversationFinished(QPcapTcpConversation conversation);
   void packetsCountTick(unsigned long count);

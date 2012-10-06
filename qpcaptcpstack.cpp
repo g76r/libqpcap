@@ -56,9 +56,9 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
 }
 
 void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
-                                  QPcapTcpConversation conversation) {
+                                   QPcapTcpConversation conversation) {
   ++_packetsCount;
-  if (_packetsCount % 1000 == 0)
+  if (_packetsCount % 1000 == 0) // LATER parametrize interval between tick
     emit packetsCountTick(_packetsCount);
   if (conversation.matchesSameStream(packet)) {
     // upstream packet (client to server)
@@ -69,7 +69,8 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     }
     if (packet.seqNumber() == conversation.nextUpstreamNumber()) {
       conversation.packets().append(packet);
-      emit tcpUpstreamPacket(packet, conversation);
+      packet.setUpstream(true);
+      emit tcpPacket(packet, conversation);
       conversation.nextUpstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();
       QPcapTcpPacket packet2;
@@ -107,7 +108,8 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     //qDebug() << conversation.id() << "  downstream" << packet.seqNumber() << conversation.nextDownstreamNumber() << packet.payload().size();
     if (packet.seqNumber() == conversation.nextDownstreamNumber()) {
       conversation.packets().append(packet);
-      emit tcpDownstreamPacket(packet, conversation);
+      packet.setUpstream(false);
+      emit tcpPacket(packet, conversation);
       conversation.nextDownstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();
       QPcapTcpPacket packet2;

@@ -13,10 +13,8 @@ QPcapHttpStack::QPcapHttpStack(QObject *parent, QPcapTcpStack *stack,
           this, SLOT(conversationStarted(QPcapTcpConversation)));
   connect(stack, SIGNAL(conversationFinished(QPcapTcpConversation)),
           this, SLOT(conversationFinished(QPcapTcpConversation)));
-  connect(stack, SIGNAL(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
-          this, SLOT(tcpUpstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
-  connect(stack, SIGNAL(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)),
-          this, SLOT(tcpDownstreamPacket(QPcapTcpPacket,QPcapTcpConversation)));
+  connect(stack, SIGNAL(tcpPacket(QPcapTcpPacket,QPcapTcpConversation)),
+          this, SLOT(tcpPacket(QPcapTcpPacket,QPcapTcpConversation)));
   connect(this, SIGNAL(discardUpstreamBuffer(QPcapTcpConversation)),
           stack, SLOT(discardUpstreamBuffer(QPcapTcpConversation)));
   connect(this, SIGNAL(discardDownstreamBuffer(QPcapTcpConversation)),
@@ -30,17 +28,6 @@ void QPcapHttpStack::conversationStarted(QPcapTcpConversation conversation) {
                         new QPcapHttpConversation(conversation));
 }
 
-void QPcapHttpStack::tcpUpstreamPacket(QPcapTcpPacket packet,
-                                       QPcapTcpConversation conversation) {
-  hasTcpPacket(true, packet, conversation);
-}
-
-void QPcapHttpStack::tcpDownstreamPacket(QPcapTcpPacket packet,
-                                         QPcapTcpConversation conversation) {
-  hasTcpPacket(false, packet, conversation);
-}
-
-
 void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
   QPcapHttpConversation *c = _conversations.value(conversation.id());
   if (!c)
@@ -53,12 +40,13 @@ void QPcapHttpStack::conversationFinished(QPcapTcpConversation conversation) {
   delete c;
 }
 
-void QPcapHttpStack::hasTcpPacket(bool isUpstream, QPcapTcpPacket packet,
-                                  QPcapTcpConversation conversation) {
+void QPcapHttpStack::tcpPacket(QPcapTcpPacket packet,
+                               QPcapTcpConversation conversation) {
   //qDebug() << "receiving HTTP packet" << conversation.id() << packet;
   if (packet.isEmpty())
     return;
   QPcapHttpConversation *c = _conversations.value(conversation.id());
+  bool isUpstream = packet.upstream();
   if (!c) {
     qWarning() << "QPcapHttpStack::tcpPacket for unknown conversation"
                << (isUpstream ? "(upstream)" : "(downstream)");
