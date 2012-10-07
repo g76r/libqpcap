@@ -29,7 +29,6 @@ macx {
 }
 
 SOURCES += \
-    qpcapthread.cpp \
     qpcaptcpstack.cpp \
     qpcaptcppacket.cpp \
     qpcaptcpconversation.cpp \
@@ -46,7 +45,6 @@ SOURCES += \
     qpcapipv4portconversationsignature.cpp
 
 HEADERS += qpcap_global.h \
-    qpcapthread.h \
     qpcaptcpstack.h \
     qpcaptcppacket.h \
     qpcaptcpconversation.h \

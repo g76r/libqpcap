@@ -2,16 +2,15 @@
 #include "qpcapengine.h"
 #include <QtDebug>
 #include <QThread>
-#include "qpcapthread.h"
 #include <QMetaType>
 #include "qpcaplayer2packet.h"
 #include "qpcaplayer3packet.h"
 #include "qpcapipv4packet.h"
 #include "qpcaptcpstack.h"
 #include "qpcaphttphit.h"
+#include <QMetaObject>
 
 void QPcapEngine::init() {
-  _thread = new QPcapThread(this);
   qRegisterMetaType<QPcapLayer1Packet>("QPcapLayer1Packet");
   qRegisterMetaType<QPcapLayer2Packet>("QPcapLayer2Packet");
   qRegisterMetaType<QPcapLayer3Packet>("QPcapLayer3Packet");
@@ -19,7 +18,9 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapTcpPacket>("QPcapTcpPacket");
   qRegisterMetaType<QPcapTcpConversation>("QPcapTcpConversation");
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
-  connect(_thread, SIGNAL(finished()), this, SLOT(finishing()));
+  _thread = new QThread(this);
+  moveToThread(_thread);
+  _thread->start();
 }
 
 QPcapEngine::QPcapEngine() : _pcap(0), _packetsCount(0) {
@@ -31,30 +32,46 @@ QPcapEngine::QPcapEngine(QString filename) : _pcap(0), _packetsCount(0) {
   loadFile(filename);
 }
 
-void QPcapEngine::start() {
-  moveToThread(_thread);
-  _thread->start();
+QPcapEngine::~QPcapEngine() {
+  _thread->exit();
+  _thread->wait(100);
+  if (_pcap)
+    pcap_close(_pcap);
 }
 
 bool QPcapEngine::isRunning() const {
-  return _thread && _thread->isRunning();
+  QMutexLocker locker(&_mutex);
+  return _pcap;
 }
 
 void QPcapEngine::loadFile(QString filename) {
+  QMutexLocker locker(&_mutex);
   char errbuf[PCAP_ERRBUF_SIZE];
   if (_pcap) {
-    pcap_close(_pcap);
-    _pcap = 0;
+    qWarning() << "QPcapEngine::loadFile called while running (ignored)";
+    return;
   }
   emit captureStarted();
   emit packetsCountTick(_packetsCount = 0);
   _pcap = pcap_open_offline(filename.toUtf8(), errbuf);
-  if (_pcap)
+  if (_pcap) {
     _filename = filename;
-  else {
+    readNextPackets();
+  } else {
     qDebug() << "pcap_open_offline" << filename << "failed:" << errbuf;
     _filename = QString();
+    emit captureFinished();
   }
+}
+
+void QPcapEngine::readNextPackets() {
+  //qDebug() << "readNextPackets";
+  int count = pcap_dispatch(_pcap, 128, this->callback,
+                            reinterpret_cast<u_char*>(this));
+  if (count > 0)
+    QMetaObject::invokeMethod(this, "readNextPackets", Qt::QueuedConnection);
+  else
+    finishing();
 }
 
 void QPcapEngine::packetHandler(const struct pcap_pkthdr* pkthdr,
@@ -82,6 +99,7 @@ void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
 }
 
 void QPcapEngine::finishing() {
+  QMutexLocker locker(&_mutex);
   //qDebug() << "pcap capture finished";
   emit packetsCountTick(_packetsCount);
   emit captureFinished();

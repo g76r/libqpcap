@@ -7,11 +7,11 @@
 #define pcap_t void
 #endif
 #include <QString>
-#include <QObject>
+#include <QMutex>
 #include "qpcaplayer1packet.h"
 #include "qpcap_global.h"
 
-class QPcapThread;
+class QThread;
 
 class LIBQPCAPSHARED_EXPORT QPcapEngine : public QObject {
   Q_OBJECT
@@ -19,18 +19,16 @@ class LIBQPCAPSHARED_EXPORT QPcapEngine : public QObject {
 private:
   pcap_t *_pcap;
   QString _filename;
-  QPcapThread *_thread;
+  QThread *_thread;
   unsigned long _packetsCount;
+  mutable QMutex _mutex;
 
 public:
   QPcapEngine();
   QPcapEngine(QString filename);
+  ~QPcapEngine();
   void loadFile(QString filename);
-  void start();
   bool isRunning() const;
-
-private slots:
-  void finishing();
 
 signals:
   // LATER propagate captureXXX() signals to all stacks
@@ -39,13 +37,16 @@ signals:
   void layer1PacketReceived(QPcapLayer1Packet packet);
   void packetsCountTick(unsigned long count);
 
+private slots:
+  void readNextPackets();
+
 private:
   void init();
   void packetHandler(const struct pcap_pkthdr* pkthdr,
                      const u_char* packet);
   static void callback(u_char *user, const struct pcap_pkthdr* pkthdr,
                        const u_char* packet);
-
+  void finishing();
   Q_DISABLE_COPY(QPcapEngine)
 };
 
