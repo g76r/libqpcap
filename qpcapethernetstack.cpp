@@ -8,8 +8,6 @@ QPcapEthernetStack::QPcapEthernetStack(QObject *parent, QPcapEngine *engine)
           this, SLOT(layer1PacketReceived(QPcapLayer1Packet)));
   connect(engine, SIGNAL(captureStarted()), this, SIGNAL(captureStarted()));
   connect(engine, SIGNAL(captureFinished()), this, SIGNAL(captureFinished()));
-  connect(engine, SIGNAL(layer1PacketReceived(QPcapLayer1Packet)),
-          this, SLOT(layer1PacketReceived(QPcapLayer1Packet)));
 }
 
 void QPcapEthernetStack::layer1PacketReceived(QPcapLayer1Packet packet) {
