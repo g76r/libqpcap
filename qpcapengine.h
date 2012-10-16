@@ -19,7 +19,6 @@ class LIBQPCAPSHARED_EXPORT QPcapEngine : public QObject {
 private:
   pcap_t *_pcap;
   QString _filename;
-  QThread *_thread;
   unsigned long _packetsCount;
   mutable QMutex _mutex;
 

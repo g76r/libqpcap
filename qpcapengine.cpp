@@ -18,9 +18,6 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapTcpPacket>("QPcapTcpPacket");
   qRegisterMetaType<QPcapTcpConversation>("QPcapTcpConversation");
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
-  _thread = new QThread(this);
-  moveToThread(_thread);
-  _thread->start();
 }
 
 QPcapEngine::QPcapEngine() : _pcap(0), _packetsCount(0) {
@@ -33,8 +30,6 @@ QPcapEngine::QPcapEngine(QString filename) : _pcap(0), _packetsCount(0) {
 }
 
 QPcapEngine::~QPcapEngine() {
-  _thread->exit();
-  _thread->wait(100);
   if (_pcap)
     pcap_close(_pcap);
 }
@@ -56,7 +51,7 @@ void QPcapEngine::loadFile(QString filename) {
   _pcap = pcap_open_offline(filename.toUtf8(), errbuf);
   if (_pcap) {
     _filename = filename;
-    readNextPackets();
+    QMetaObject::invokeMethod(this, "readNextPackets", Qt::QueuedConnection);
   } else {
     qDebug() << "pcap_open_offline" << filename << "failed:" << errbuf;
     _filename = QString();
@@ -100,7 +95,8 @@ void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
 
 void QPcapEngine::finishing() {
   QMutexLocker locker(&_mutex);
-  //qDebug() << "pcap capture finished";
+  //qDebug() << "pcap capture finished" << _packetsCount;
+  //qDebug() << "QPcapEngine thread" << thread();
   emit packetsCountTick(_packetsCount);
   emit captureFinished();
   if (_pcap) {
