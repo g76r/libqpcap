@@ -17,6 +17,20 @@ public:
       const QPcapIPv4PortConversationSignatureData &other)
     : QSharedData(), _data(other._data) { }
   inline ~QPcapIPv4PortConversationSignatureData() { if (_data) delete _data; }
+  inline bool operator ==(
+      const QPcapIPv4PortConversationSignatureData &other) const {
+    return _data == 0
+        ? other._data == 0
+        : other._data && _data[0] == other._data[0]
+          && _data[1] == other._data[1];
+  }
+  inline bool operator <(
+      const QPcapIPv4PortConversationSignatureData &other) const {
+    return _data == 0
+        ? other._data != 0
+        : other._data != 0
+        && (_data[0] < other._data[0] || _data[1] < other._data[1]);
+  }
 };
 
 class QPcapIPv4PortConversationSignature {
@@ -29,14 +43,17 @@ public:
       const QPcapIPv4PortConversationSignature &other) : d(other.d) { }
   inline bool operator ==(
       const QPcapIPv4PortConversationSignature &other) const {
-    return d->_data && other.d->_data && d->_data[0] == other.d->_data[0]
-        && d->_data[1] == other.d->_data[1];
+    return *d == *(other.d);
   }
   inline bool operator <(
       const QPcapIPv4PortConversationSignature &other) const {
-    return d->_data && other.d->_data
-        && (d->_data[0] < other.d->_data[0] || d->_data[1] < other.d->_data[1]);
+    return *d < *(other.d);
   }
+  uint hashCode() const;
 };
+
+inline uint qHash(const QPcapIPv4PortConversationSignature &o) {
+  return o.hashCode();
+}
 
 #endif // QPCAPIPV4PORTCONVERSATIONSIGNATURE_H

@@ -9,18 +9,6 @@ QPcapTcpStack::QPcapTcpStack(QObject *parent, QPcapIPv4Stack *stack)
           this, SLOT(ipPacketReceived(QPcapIPv4Packet)));
 }
 
-quint64 QPcapTcpStack::higherPortPeer(QPcapTcpPacket packet) {
-  return (packet.dstPort() > packet.srcPort())
-      ? ((packet.ip().dstAsInt() << 16) + packet.dstPort())
-      : ((packet.ip().srcAsInt() << 16) + packet.srcPort());
-}
-
-quint64 QPcapTcpStack::lowerPortPeer(QPcapTcpPacket packet) {
-  return (packet.dstPort() < packet.srcPort())
-      ? ((packet.ip().dstAsInt() << 16) + packet.dstPort())
-      : ((packet.ip().srcAsInt() << 16) + packet.srcPort());
-}
-
 void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   if (packet.layer4Proto() != QPcapIPv4Packet::TCP) {
     return; // ignoring non-tcp packets
@@ -30,12 +18,6 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
     qDebug() << "   ignoring malformed tcp packet";
     return;
   }
-  // conversations are indexed depending on their (addr,port) couples, since
-  // we do not yet now which port is upstream and which is downstream, they are
-  // indexed depending on the higher or lower of two ports
-  // then the smaller collections of two is searched for a matching stream,
-  // the smaller should contain 0 or 1 elements, whereas the larger can contain
-  // thousands when the same server has thousands client connections at a time
   QPcapIPv4PortConversationSignature sig(tcp);
   foreach (QPcapTcpConversation c, _conversations.values(sig)) {
     dispatchPacket(tcp, c);
@@ -55,11 +37,16 @@ void QPcapTcpStack::ipPacketReceived(QPcapIPv4Packet packet) {
   dispatchPacket(tcp, c);
 }
 
-void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
-                                   QPcapTcpConversation conversation) {
+inline void QPcapTcpStack::emitPacket(QPcapTcpPacket packet,
+                                      QPcapTcpConversation conversation) {
+  emit tcpPacket(packet, conversation);
   ++_packetsCount;
   if (_packetsCount % 1000 == 0) // LATER parametrize interval between tick
     emit packetsCountTick(_packetsCount);
+}
+
+void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
+                                   QPcapTcpConversation conversation) {
   if (conversation.matchesSameStream(packet)) {
     // upstream packet (client to server)
     //qDebug() << "  upstream" << conversation.id() << packet.seqNumber() << conversation.nextUpstreamNumber() << packet.payload().size();
@@ -70,20 +57,20 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     if (packet.seqNumber() == conversation.nextUpstreamNumber()) {
       conversation.packets().append(packet);
       packet.setUpstream(true);
-      emit tcpPacket(packet, conversation);
+      emitPacket(packet, conversation);
       conversation.nextUpstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();
-      QPcapTcpPacket packet2;
+      QList<QPcapTcpPacket> packets;
       foreach (QPcapTcpPacket p, _upstreamBuffer.values(conversation))
-        if (p.seqNumber() == conversation.nextUpstreamNumber()) {
-          packet2 = p;
-          break;
-        }
-      if (!packet2.isNull()) {
+        if (p.seqNumber() == conversation.nextUpstreamNumber())
+          packets.append(p);
+      //if (packets.size())
+      //  qDebug() << "retrieving from upstream buffer" << packets.size();
+      foreach (QPcapTcpPacket p, packets) {
         //qDebug() << "  removing buffered packet" << packet2;
-        _upstreamBuffer.remove(conversation, packet2);
+        _upstreamBuffer.remove(conversation, p);
         //qDebug() << "  found upstream buffered packet" << packet2;
-        dispatchPacket(packet2, conversation); // this is a recursive call
+        dispatchPacket(p, conversation); // this is a recursive call
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextUpstreamNumber()) < 0) {
@@ -109,20 +96,20 @@ void QPcapTcpStack::dispatchPacket(QPcapTcpPacket packet,
     if (packet.seqNumber() == conversation.nextDownstreamNumber()) {
       conversation.packets().append(packet);
       packet.setUpstream(false);
-      emit tcpPacket(packet, conversation);
+      emitPacket(packet, conversation);
       conversation.nextDownstreamNumber() +=
           packet.syn() ? 1 : packet.payload().size();
-      QPcapTcpPacket packet2;
+      QList<QPcapTcpPacket> packets;
       foreach (QPcapTcpPacket p, _downstreamBuffer.values(conversation))
-        if (p.seqNumber() == conversation.nextDownstreamNumber()) {
-          packet2 = p;
-          break;
-        }
-      if (!packet2.isNull()) {
+        if (p.seqNumber() == conversation.nextDownstreamNumber())
+          packets.append(p);
+      //if (packets.size())
+      //  qDebug() << "retrieving from downstream buffer" << packets.size();
+      foreach (QPcapTcpPacket p, packets) {
         //qDebug() << conversation.id() << "  removing buffered packet" << packet2;
-        _downstreamBuffer.remove(conversation, packet2);
+        _downstreamBuffer.remove(conversation, p);
         //qDebug() << conversation.id() << "  found downstream buffered packet" << packet2;
-        dispatchPacket(packet2, conversation); // this is a recursive call
+        dispatchPacket(p, conversation); // this is a recursive call
       }
     } else {
       if ((qint32)(packet.seqNumber()-conversation.nextDownstreamNumber()) < 0){

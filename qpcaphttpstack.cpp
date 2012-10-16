@@ -276,6 +276,7 @@ void QPcapHttpStack::starting() {
 }
 
 void QPcapHttpStack::finishing() {
+  //qDebug() << "QPcapHttpStack thread" << thread();
   emit hitsCountTick(_hitsCount);
   emit captureFinished();
   qDeleteAll(_conversations.values());
