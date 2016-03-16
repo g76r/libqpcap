@@ -28,7 +28,7 @@ make
 
 Dependencies:
 - on POSIX systems one should first install libpcap dev kit, e.g.
-  "apt-get install libpcap-devel" or "yum install libpcap-devel" under Linux
+  "apt-get install libpcap-dev" or "yum install libpcap-devel" under Linux
 - on Windows systems one should install WinPCAP devkit and place it under
   c:\WpdPack directory
 - Qt 4.8
