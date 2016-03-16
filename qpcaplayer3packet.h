@@ -23,6 +23,7 @@ public:
   inline QPcapLayer3PacketData(const QPcapLayer3PacketData &other)
     : QSharedData(), _layer3Proto(other._layer3Proto),
       _payload(other._payload), _timestamp(other._timestamp) { }
+  virtual ~QPcapLayer3PacketData();
   virtual QString toText() const;
 };
 

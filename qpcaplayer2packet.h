@@ -25,6 +25,7 @@ public:
     : QSharedData(), _timestamp(other._timestamp),
       _layer2Proto(other._layer2Proto), _layer3Proto(other._layer3Proto),
       _payload(other._payload) { }
+  virtual ~QPcapLayer2PacketData();
   virtual QString toText() const;
 };
 
