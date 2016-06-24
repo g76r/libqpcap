@@ -31,5 +31,5 @@ Dependencies:
   "apt-get install libpcap-dev" or "yum install libpcap-devel" under Linux
 - on Windows systems one should install WinPCAP devkit and place it under
   c:\WpdPack directory
-- Qt 4.8
+- Qt 5
 

@@ -1,6 +1,12 @@
 QT -= gui
 TARGET = qpcap
 TEMPLATE = lib
+CONFIG += c++11
+
+contains(QT_VERSION, ^4\\..*) {
+  message("Cannot build with Qt version $${QT_VERSION}.")
+  error("Use Qt 5.")
+}
 
 win32:QMAKE_RPATHDIR = # no rpath in linking
 
@@ -8,6 +14,12 @@ DEFINES += LIBQPCAP_LIBRARY
 win32:INCLUDEPATH += c:/WpdPack/Include
 win32:LIBS += c:/WpdPack/Lib/wpcap.lib
 !win32:LIBS += -lpcap
+
+exists(/usr/bin/ccache):QMAKE_CXX = ccache g++
+exists(/usr/bin/ccache):QMAKE_CXXFLAGS += -fdiagnostics-color=always
+QMAKE_CXXFLAGS += -Wextra -Woverloaded-virtual
+unix:debug:QMAKE_CXXFLAGS += -ggdb
+
 QMAKE_CXXFLAGS_DEBUG += -pg -fno-default-inline -fno-inline
 QMAKE_LFLAGS_DEBUG += -pg
 
