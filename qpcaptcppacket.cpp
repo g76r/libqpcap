@@ -1,4 +1,5 @@
 #include "qpcaptcppacket.h"
+#include <QDateTime>
 
 static QAtomicInt _packetCounter = 1;
 
@@ -49,9 +50,16 @@ QString QPcapTcpPacketData::toText() const {
     flags.append('S');
   if (fin())
     flags.append('F');
-  return QString("QPcapTcpPacket(%1, %2, %3, %4, %5, %6)").arg(id())
-      .arg(src()).arg(dst())
-      .arg(_seqNumber).arg(flags).arg(payload().size());
+  return QStringLiteral("QPcapTcpPacket(%1, %2, %3, %4, \"%5\", %6, \"%7\")")
+      .arg(id())
+      .arg(src())
+      .arg(dst())
+      .arg(_seqNumber)
+      .arg(flags)
+      .arg(payload().size())
+      .arg(QDateTime::fromMSecsSinceEpoch(_ip.timestamp()/1000)
+           .toString("HH:mm:ss,zzz"));
+      // LATER .arg(_ip.timestamp()%1000, 3, 10, QLatin1Char('0'));
 }
 
 QString QPcapTcpPacketData::toShortText() const {
