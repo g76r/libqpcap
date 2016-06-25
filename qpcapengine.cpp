@@ -43,7 +43,7 @@ bool QPcapEngine::isRunning() const {
 void QPcapEngine::loadFile(QString filename) {
   QMutexLocker locker(&_mutex);
   char errbuf[PCAP_ERRBUF_SIZE];
-  qDebug() << "QPcapEngine::loadFile" << filename;
+  qInfo() << "QPcapEngine::loadFile" << filename;
   if (_pcap) {
     qWarning() << "QPcapEngine::loadFile called while running (ignored)";
     return;
@@ -74,7 +74,7 @@ void QPcapEngine::loadFile(QString filename) {
       emit captureFinished();
     }
   } else {
-    qDebug() << "pcap_open_offline" << filename << "failed:" << errbuf;
+    qWarning() << "pcap_open_offline" << filename << "failed:" << errbuf;
     _filename = QString();
     emit captureFinished();
   }
