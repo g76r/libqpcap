@@ -234,6 +234,7 @@ void QPcapHttpStack::hasResponsePacket(QPcapTcpPacket packet,
   if (!c->_hit.firstResponseTimestamp()) {
     //qDebug() << c->_tcp.id() << "=== setting timestamp" << packet;
     c->_hit.firstResponseTimestamp() = packet.ip().timestamp();
+    c->_hit.firstResponsePacket() = packet;
   } else {
     //qDebug() << c->_tcp.id() << "    not setting timestamp" << packet;
   }

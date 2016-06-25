@@ -19,7 +19,7 @@ private:
   QPcapHttpMethod _method;
   QString _protocol, _host, _path;
   quint16 _returnCode;
-  QPcapTcpPacket _firstRequestPacket;
+  QPcapTcpPacket _firstRequestPacket, _firstResponsePacket;
   quint64 _firstResponseTimestamp, _lastResponseTimestamp;
   QPcapTcpConversation _conversation;
   QList<QString> _customFields;
@@ -41,6 +41,7 @@ public:
     _method(other._method), _protocol(other._protocol), _host(other._host),
     _path(other._path), _returnCode(other._returnCode),
     _firstRequestPacket(other._firstRequestPacket),
+    _firstResponsePacket(other._firstResponsePacket),
     _firstResponseTimestamp(other._firstResponseTimestamp),
     _lastResponseTimestamp(other._lastResponseTimestamp),
     _conversation(other._conversation) { }
@@ -77,6 +78,7 @@ public:
   quint16 &returnCode() const { return d->_returnCode; }
   quint64 requestTimestamp() const { return d->_firstRequestPacket.ip().timestamp(); }
   QPcapTcpPacket &firstRequestPacket() const { return d->_firstRequestPacket; }
+  QPcapTcpPacket &firstResponsePacket() const { return d->_firstResponsePacket; }
   quint64 firstResponseTimestamp() const { return d->_firstResponseTimestamp; }
   quint64 &firstResponseTimestamp() { return d->_firstResponseTimestamp; }
   quint64 lastResponseTimestamp() const { return d->_lastResponseTimestamp; }
