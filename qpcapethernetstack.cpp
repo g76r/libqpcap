@@ -12,6 +12,7 @@ QPcapEthernetStack::QPcapEthernetStack(QObject *parent, QPcapEngine *engine)
 
 void QPcapEthernetStack::layer1PacketReceived(QPcapLayer1Packet packet) {
   QPcapEthernetPacket ether(packet);
+  //qDebug() << "QPcapEthernetStack::layer1PacketReceived" << packet.timestamp();
   if (!ether.isNull())
     emit layer2PacketReceived(ether);
   //else

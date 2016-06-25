@@ -20,6 +20,7 @@ private:
   pcap_t *_pcap;
   QString _filename;
   unsigned long _packetsCount;
+  int _datalink, _preambleLength;
   mutable QMutex _mutex;
 
 public:

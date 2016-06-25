@@ -30,7 +30,7 @@ public:
       _payload(other._payload) {
   }
   QPcapLayer1PacketData(const struct pcap_pkthdr* pkthdr,
-                        const u_char* packet);
+                        const u_char* packet, const int preambleLength);
   inline quint64 usecSince1970() const { return _timestamp; }
   inline QDateTime timestamp() const {
     return QDateTime::fromMSecsSinceEpoch(_timestamp/1000);
@@ -50,8 +50,8 @@ private:
   QExplicitlySharedDataPointer<QPcapLayer1PacketData> d;
 
   inline QPcapLayer1Packet(const struct pcap_pkthdr* pkthdr,
-                           const u_char* packet) {
-    d = new QPcapLayer1PacketData(pkthdr, packet);
+                           const u_char* packet, const int preambleLength) {
+    d = new QPcapLayer1PacketData(pkthdr, packet, preambleLength);
   }
 
 public:

@@ -27,7 +27,7 @@ QPcapIPv4PacketData::QPcapIPv4PacketData(const QPcapLayer2Packet &packet)
   _headerChecksum = (layer2Data[10] << 8) + layer2Data[11];
   ::memcpy(_src, layer2Data+12, 4);
   ::memcpy(_dst, layer2Data+16, 4);
-  //qDebug() << "QPcapIPv4Packet" << size << _headerSize
+  //qDebug() << "QPcapIPv4Packet" << _totalSize << _headerSize
   //         << _version;
   if (layer2DataSize < _headerSize*4 || _headerSize*4 < 20) {
     reset();

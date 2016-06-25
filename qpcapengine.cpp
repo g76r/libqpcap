@@ -20,7 +20,8 @@ void QPcapEngine::init() {
   qRegisterMetaType<QPcapHttpHit>("QPcapHttpHit");
 }
 
-QPcapEngine::QPcapEngine() : _pcap(0), _packetsCount(0) {
+QPcapEngine::QPcapEngine() : _pcap(0), _packetsCount(0), _datalink(DLT_NULL),
+  _preambleLength(0) {
   init();
 }
 
@@ -42,6 +43,7 @@ bool QPcapEngine::isRunning() const {
 void QPcapEngine::loadFile(QString filename) {
   QMutexLocker locker(&_mutex);
   char errbuf[PCAP_ERRBUF_SIZE];
+  qDebug() << "QPcapEngine::loadFile" << filename;
   if (_pcap) {
     qWarning() << "QPcapEngine::loadFile called while running (ignored)";
     return;
@@ -51,7 +53,26 @@ void QPcapEngine::loadFile(QString filename) {
   _pcap = pcap_open_offline(filename.toUtf8(), errbuf);
   if (_pcap) {
     _filename = filename;
-    QMetaObject::invokeMethod(this, "readNextPackets", Qt::QueuedConnection);
+    _datalink = pcap_datalink(_pcap);
+    switch (_datalink) {
+    case DLT_LINUX_SLL:
+      // LATER handle several datalink for real rather than pretending that SLL
+      // is EthernetII by just removing 2 bytes and put the 6 following ones in
+      // destination address as if it were an address
+      _preambleLength = 2;
+      QMetaObject::invokeMethod(this, "readNextPackets", Qt::QueuedConnection);
+      break;
+    case DLT_EN10MB:
+      _preambleLength = 0;
+      QMetaObject::invokeMethod(this, "readNextPackets", Qt::QueuedConnection);
+      break;
+    default:
+      qWarning() << "unsupported datalink format" << _datalink << "for file"
+                 << filename;
+      pcap_close(_pcap);
+      _pcap = 0;
+      emit captureFinished();
+    }
   } else {
     qDebug() << "pcap_open_offline" << filename << "failed:" << errbuf;
     _filename = QString();
@@ -75,7 +96,7 @@ void QPcapEngine::packetHandler(const struct pcap_pkthdr* pkthdr,
   //QByteArray ba((const char *)packet, pkthdr->caplen);
   //qDebug() << "PcapEngine::packetHandler" //<< (long)pkthdr << (long)packet
   //         << ba.toHex();
-  QPcapLayer1Packet pp(pkthdr, packet);
+  QPcapLayer1Packet pp(pkthdr, packet, _preambleLength);
   //qDebug() << pp;
   ++_packetsCount;
   emit layer1PacketReceived(pp);
@@ -95,8 +116,8 @@ void QPcapEngine::callback(u_char *user, const struct pcap_pkthdr* pkthdr,
 
 void QPcapEngine::finishing() {
   QMutexLocker locker(&_mutex);
-  //qDebug() << "pcap capture finished" << _packetsCount;
-  //qDebug() << "QPcapEngine thread" << thread();
+  qDebug() << "pcap capture finished" << _packetsCount;
+  qDebug() << "QPcapEngine thread" << thread();
   emit packetsCountTick(_packetsCount);
   emit captureFinished();
   if (_pcap) {
